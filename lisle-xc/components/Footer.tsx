@@ -13,7 +13,6 @@ export const Footer = () => {
             </p>
           </div>
         </div>
-        <div className="h-2 bg-light-blue"></div>
       </footer>
     );
 };
