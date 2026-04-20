@@ -5,6 +5,7 @@
   --color-lisle-blue: #183760;      /* RGB 24-55-96 */
   --color-light-blue: #96C0E6;      /* RGB 150-192-230 */
   --color-light-blue-gray: #aec5db; /* RGB 174-197-220 */
+  --color-border: #183760; /* Same as Lisle Blue */
   
   /* Official District Secondary Palette */
   --color-light-gray: #999b9e;      /* RGB 153-155-158 */

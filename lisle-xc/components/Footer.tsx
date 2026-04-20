@@ -9,7 +9,7 @@ export const Footer = () => {
               <span className="font-heading font-light text-sm tracking-[0.2em] uppercase leading-none text-light-blue">Cross Country</span>
             </div>
             <p className="font-body text-xs text-light-blue-gray uppercase tracking-widest mt-4">
-              © 2026 <a href="https://sportssites.us/">School Sports Sites</a>
+              © {new Date().getFullYear()} <a href="https://sportssites.us/" className="hover:text-light-blue transition-colors">School Sports Sites</a>
             </p>
           </div>
         </div>

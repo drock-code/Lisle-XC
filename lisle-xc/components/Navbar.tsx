@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Search, Menu, X } from 'lucide-react';
 
 export const Navbar = () => {
@@ -23,7 +23,7 @@ export const Navbar = () => {
         <div className="flex justify-between items-center h-20">
           
           {/* Brand Logo */}
-          <div className="flex-shrink-0 flex items-center group cursor-pointer">
+          <div className="shrink-0 flex items-center group">
             <div className="flex flex-col">
               <span className="font-heading font-bold text-xl md:text-2xl tracking-tighter uppercase leading-none">
                 Lisle
@@ -63,11 +63,11 @@ export const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile Menu Button */}
           <div className="flex items-center lg:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-200 hover:text-white hover:bg-white/10 focus:outline-none"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-200 hover:text-white hover:bg-white/10 focus:outline-none cursor-pointer"
             >
               {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>

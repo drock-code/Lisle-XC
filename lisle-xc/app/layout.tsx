@@ -1,5 +1,7 @@
 import "./globals.css"
 
+import { Metadata } from "next";
+
 import { getBackgroundImages } from '@/lib/getBackground';
 import { Background } from '@/components/Background';
 import { Navbar } from '@/components/Navbar';
@@ -20,6 +22,64 @@ const sourceSans = Source_Sans_3({
   variable: "--font-source-sans-pro",
   display: "swap",
 });
+
+export const metadata: Metadata = {
+  metadataBase: new URL('https://lislexc.com'),
+
+  // Standard SEO
+  title: {
+    template: 'Lisle Cross Country :: %s',
+    default: 'Lisle Cross Country :: Home',
+  },
+  description: 'News and homepage for the Lisle cross country team. Stay updated with the latest news, schedules, and results.',
+  
+  // Canonical URL
+  alternates: {
+    canonical: '/',
+  },
+
+  // Open Graph (For when links are texted or posted on Facebook/Twitter)
+  openGraph: {
+    title: 'Lisle Cross Country – Official Team Website',
+    description: 'Stay updated with the latest news, schedules, and results of the Lisle Cross Country team.',
+    url: '/',
+    siteName: 'Lisle Cross Country',
+    images: [
+      {
+        // Place your lions.jpg in the /public/images folder
+        url: '/images/lions.jpg', 
+        width: 1200,
+        height: 630,
+        alt: 'Lisle Cross Country Team',
+      },
+    ],
+    type: 'website',
+  },
+
+icons: {
+    icon: [
+      // Light Mode Icon
+      { 
+        url: '/favicon-96x96.png', 
+        sizes: '96x96', 
+        type: 'image/png', 
+        media: '(prefers-color-scheme: light)' 
+      },
+      // Dark Mode Icon
+      { 
+        url: '/favicon-dark.ico', 
+        type: 'image/x-icon', 
+        media: '(prefers-color-scheme: dark)' 
+      },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
+  
+  appleWebApp: {
+    title: 'Lisle XC',
+  },
+  manifest: '/site.webmanifest',
+};
 
 export default function RootLayout({children,}: {children: React.ReactNode;}) {
   const images = getBackgroundImages();
