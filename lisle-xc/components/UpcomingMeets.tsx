@@ -1,4 +1,6 @@
 import { Calendar } from "lucide-react";
+import Link from "next/link";
+import Button from "@/components/Button";
 
 export default function UpcomingMeets() {
   return (
@@ -27,9 +29,11 @@ export default function UpcomingMeets() {
           <p className="text-sm text-light-gray font-medium">Seneca High School</p>
         </div>
                 
-        <button className="w-full py-3 border-2 border-light-gray text-foreground font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-[#aec5db]/20 transition-all cursor-pointer">
-          View Full Schedule
-        </button>
+        <Button>
+          <Link href="/schedule" className="flex items-center gap-2">
+            View Full Schedule
+          </Link>
+        </Button>
       </div>
     </section>
   );

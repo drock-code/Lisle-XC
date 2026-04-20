@@ -9,7 +9,7 @@ export const Navbar = () => {
   const navLinks = [
     { name: 'Home', active: true, href: '#' },
     { name: 'FAQ', active: false, href: '#' },
-    { name: 'Schedule', active: false, href: '#' },
+    { name: 'Schedule', active: false, href: '/schedule' },
     { name: 'Results', active: false, href: '#' },
     { name: 'Records', active: false, href: '#' },
     { name: 'Links', active: false, href: '#' },

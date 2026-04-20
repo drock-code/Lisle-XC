@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Button from '@/components/Button';
 
 export default function News() {
   return (
@@ -16,9 +17,7 @@ export default function News() {
           <p className="font-body text-foreground leading-relaxed text-lg mb-8">
             While the girls were eating breakfast at Morningside Cafe in Lisle before the drive down to Peoria for State on Friday, a man and his wife came up to the table after finishing their meal. They asked if the girls were the cross country team that had made State...
           </p>
-          <button className="bg-lisle-blue text-white px-8 py-3 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-light-blue transition-all duration-300 shadow-lg shadow-lisle-blue/20 cursor-pointer">
-            Read Full Story
-          </button>
+          <Button>Read Full Story</Button>
         </div>
       </section>
 
