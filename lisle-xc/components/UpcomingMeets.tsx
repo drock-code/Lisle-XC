@@ -2,7 +2,7 @@ import { Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 
 import Button from "@/components/Button";
-import MeetInfoModal from "@/components/MeetInfoModal";
+import GenericModal from "@/components/GenericModal";
 import { getUpcomingMeets } from "@/lib/queries";
 import { formatTime } from "@/lib/time";
 
@@ -33,7 +33,12 @@ export default async function UpcomingMeets() {
               {/* MEET TITLE: Triggers Modal if Info exists */}
               <h4 className="font-body text-lg text-foreground transition-colors">
                 {meet.Info ? (
-                  <MeetInfoModal info={meet.Info} meetName={meet.Meet} />
+                  <GenericModal 
+                  title={`${meet.Meet} Info`}
+                  content={meet.Info}
+                  trigger={meet.Meet}
+                  triggerClassName="font-bold text-foreground hover:text-light-blue transition-colors block w-full"
+                />
                 ) : (
                   meet.Meet
                 )}
@@ -43,14 +48,14 @@ export default async function UpcomingMeets() {
               <div className="text-sm font-medium">
                 {meet.Location ? (
                   <a 
-  href={`https://maps.google.com/?q=${encodeURIComponent(meet.Location)}`}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="inline-flex items-center text-light-gray hover:text-light-blue hover:underline transition-colors"
->
-  <MapPin className="w-4 h-4 mr-1 shrink-0" />
-  {meet.Location}
-</a>
+                    href={`https://maps.google.com/?q=${encodeURIComponent(meet.Location)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-light-gray hover:text-light-blue hover:underline transition-colors"
+                  >
+                    <MapPin className="w-4 h-4 mr-1 shrink-0" />
+                    {meet.Location}
+                  </a>
                 ) : (
                   <span className="text-light-gray">Location TBA</span>
                 )}
