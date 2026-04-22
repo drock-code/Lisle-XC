@@ -3,6 +3,12 @@ import type { RowDataPacket } from 'mysql2';
 
 
 /* SCHEDULE QUERIES */
+  export interface MeetResult {
+    ID: number;
+    Title: string;
+    File: string;
+  }
+
   export interface ScheduleRow extends RowDataPacket {
     ID: number;
     Meet: string;
@@ -11,7 +17,9 @@ import type { RowDataPacket } from 'mysql2';
     Location: string | null;
     Level: string | null;
     Info: string | null;
+    Results: MeetResult[] | null;
   }
+  
 
   // Automatically find all years that have meets in the database
   export async function getAvailableYears() {
@@ -25,17 +33,51 @@ import type { RowDataPacket } from 'mysql2';
   // Fetch the schedule for a specific year
   export async function getScheduleByYear(year: string) {
     const [rows] = await pool.query<ScheduleRow[]>(
-      'SELECT * FROM Schedule WHERE YEAR(Date) = ? ORDER BY Date ASC',
+      `SELECT 
+        s.*,
+        (
+          SELECT JSON_ARRAYAGG(
+            JSON_OBJECT('ID', r.ID, 'Title', r.Title, 'File', r.File)
+          )
+          FROM RaceFile r
+          WHERE r.RaceID = s.ID
+        ) AS Results
+      FROM Schedule s 
+      WHERE YEAR(s.Date) = ? 
+      ORDER BY s.Date ASC`,
       [year]
     );
-    return rows;
+    
+    // Ensure the Results column is proper JSON
+    return rows.map(row => ({
+      ...row,
+      Results: typeof row.Results === 'string' ? JSON.parse(row.Results) : row.Results
+    }));
   }
 
   // Find the next two upcoming meets in the schedule
   export async function getUpcomingMeets(limit: number = 2) {
     const [rows] = await pool.query<ScheduleRow[]>(
-      'SELECT * FROM Schedule WHERE Date >= CURDATE() ORDER BY Date ASC LIMIT ?',
+      `SELECT 
+        s.*,
+        (
+          SELECT JSON_ARRAYAGG(
+            JSON_OBJECT('ID', r.ID, 'Title', r.Title, 'File', r.File)
+          )
+          FROM RaceFile r
+          WHERE r.RaceID = s.ID
+        ) AS Results
+      FROM Schedule s 
+      WHERE Date >= CURDATE() 
+      ORDER BY Date ASC 
+      LIMIT ?`,
       [limit]
     );
-    return rows;
+
+    // Ensure the Results column is properly parsed into a JavaScript array
+    return rows.map(row => ({
+      ...row,
+      Results: typeof row.Results === 'string' ? JSON.parse(row.Results) : row.Results
+    }));
   }
+/* END OF SCHEDULE QUERIES */

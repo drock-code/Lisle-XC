@@ -1,11 +1,12 @@
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trophy } from 'lucide-react';
 import Link from 'next/link';
 
-import { getScheduleByYear, getAvailableYears } from '@/lib/queries';
+import { getScheduleByYear, getAvailableYears, type MeetResult } from '@/lib/queries';
 import { formatTime } from '@/lib/time';
 
 import MeetInfoModal from '@/components/MeetInfoModal';
 import Button from '@/components/Button';
+import Pill from '@/components/Pill';
 
 export const metadata = {
   title: 'Season Schedule',
@@ -32,23 +33,23 @@ export default async function SchedulePage({searchParams}: {
                 {/* The Wrapper */}
                 <div className="relative w-full md:w-auto md:max-w-md lg:max-w-xl overflow-hidden flex items-center">
                     {/* The Track */}
-<div className="flex gap-2 overflow-x-auto py-4 px-1 w-full snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden items-center">
-    {years.map((year) => (
-        <Link
-            key={year}
-            href={`/schedule?year=${year}`}
-            className="shrink-0 snap-start"
-        >
-            <Button
-              size="sm"
-              isActive={activeYear === year}
-              className={activeYear !== year ? 'shadow-sm' : ''}
-            >
-              {year}
-            </Button>
-        </Link>
-    ))}
-</div>
+                    <div className="flex gap-2 overflow-x-auto py-4 px-1 w-full snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden items-center">
+                        {years.map((year) => (
+                            <Link
+                                key={year}
+                                href={`/schedule?year=${year}`}
+                                className="shrink-0 snap-start"
+                            >
+                                <Button
+                                  size="sm"
+                                  isActive={activeYear === year}
+                                  className={activeYear !== year ? 'shadow-sm' : ''}
+                                >
+                                  {year}
+                                </Button>
+                            </Link>
+                        ))}
+                    </div>
 
                     {/* Visual Gradient Cues */}
                     {years.length > 4 && (
@@ -72,6 +73,7 @@ export default async function SchedulePage({searchParams}: {
                   <th className="p-4 font-semibold uppercase tracking-wider">Date & Time</th>
                   <th className="p-4 font-semibold uppercase tracking-wider">Level</th>
                   <th className="p-4 font-semibold uppercase tracking-wider">Location</th>
+                  <th className="p-4 font-semibold uppercase tracking-wider">Results</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -116,8 +118,28 @@ export default async function SchedulePage({searchParams}: {
                         <span className="text-light-gray text-sm">TBA</span>
                       )}
                     </td>
+                    <td className="p-4 align-top">
+                      {meet.Results && meet.Results.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {meet.Results.map((result: MeetResult) => (
+                            result.Title && result.File ? (
+                              <Pill 
+                                key={result.ID} 
+                                title={result.Title} 
+                                href={result.File} 
+                                icon={<Trophy size={12} />} 
+                              />
+                            ) : null
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-light-gray text-sm">-</span>
+                      )}
+                    </td>
                   </tr>
+                  
                 ))}
+                
               </tbody>
             </table>
           </div>
@@ -169,6 +191,26 @@ export default async function SchedulePage({searchParams}: {
                     </a>
                   )}
                 </div>
+
+                {/* MOBILE RESULTS ROW */}
+                {meet.Results && meet.Results.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-3 mt-3 border-t border-border">
+                    <span className="text-xs font-bold text-light-gray uppercase tracking-wider">
+                      Results:
+                    </span>
+                    {meet.Results.map((result: MeetResult) => (
+                      result.Title && result.File ? (
+                        <Pill 
+                          key={result.ID} 
+                          title={result.Title} 
+                          href={result.File} 
+                          icon={<Trophy size={12} />} 
+                        />
+                      ) : null
+                    ))}
+                  </div>
+                )}
+
               </div>
             )) : (
               <div className="p-8 text-center text-light-gray">
