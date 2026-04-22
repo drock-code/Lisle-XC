@@ -1,5 +1,3 @@
-"use client";
-
 import News from '@/components/News';
 import UpcomingMeets from '@/components/UpcomingMeets';
 import QuickLinks from '@/components/QuickLinks';

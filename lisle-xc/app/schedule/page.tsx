@@ -1,18 +1,24 @@
-import Link from 'next/link';
 import { Calendar, Clock, MapPin, Trophy } from 'lucide-react';
-import { getScheduleByYear, getAvailableYears } from '@/lib/queries';
+import Link from 'next/link';
+
+import { getScheduleByYear, getAvailableYears, type MeetResult } from '@/lib/queries';
+import { formatTime } from '@/lib/time';
+
+import MeetInfoModal from '@/components/MeetInfoModal';
+import Button from '@/components/Button';
+import Pill from '@/components/Pill';
 
 export const metadata = {
   title: 'Season Schedule',
 };
 
-// Next.js passes searchParams automatically so we can read the URL (?year=2025)
 export default async function SchedulePage({searchParams}: {
-    searchParams: { year?: string };
+    searchParams: Promise<{ year?: string }>;
 }) 
-{
+  {
+    const resolvedParams = await searchParams;
     const years = await getAvailableYears();
-    const activeYear = searchParams.year || (years.length > 0 ? years[0] : '2026');
+    const activeYear = resolvedParams.year || (years.length > 0 ? years[0] : '2026');
     const currentMeets = await getScheduleByYear(activeYear);
 
     return (
@@ -24,128 +30,190 @@ export default async function SchedulePage({searchParams}: {
                         <p className="font-body text-light-blue t-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">View upcoming meets and historical results.</p>
                     </div>
           
-                {/* The Wrapper creates the boundary and the fade effect when there are more years than can be displayed */}
+                {/* The Wrapper */}
                 <div className="relative w-full md:w-auto md:max-w-md lg:max-w-xl overflow-hidden flex items-center">
-                    {/* The Track allows horizontal scrolling but hides the scrollbar */}
-                    <div className="flex gap-2 overflow-x-auto py-2 px-1 w-full snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {/* The Track */}
+                    <div className="flex gap-2 overflow-x-auto py-4 px-1 w-full snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden items-center">
                         {years.map((year) => (
                             <Link
                                 key={year}
                                 href={`/schedule?year=${year}`}
-                                className={`shrink-0 snap-start px-5 py-2 rounded-full text-sm font-bold transition-all ${
-                                    activeYear === year 
-                                    ? 'bg-lisle-blue text-white shadow-md scale-105' 
-                                    : 'bg-white text-slate-600 border border-border shadow-sm hover:border-light-blue hover:text-lisle-blue'
-        }`}
-      >
-        {year}
-      </Link>
-    ))}
-  </div>
+                                className="shrink-0 snap-start"
+                            >
+                                <Button
+                                  size="sm"
+                                  isActive={activeYear === year}
+                                  className={activeYear !== year ? 'shadow-sm' : ''}
+                                >
+                                  {year}
+                                </Button>
+                            </Link>
+                        ))}
+                    </div>
 
-  {/* Visual Gradient Cues */}
-       {years.length > 4 && (
-              <>
-                <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white/90 to-transparent pointer-events-none rounded-r-xl" />
-                <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white/90 to-transparent pointer-events-none rounded-l-xl" />
-              </>
-            )}
-          </div>
-
-
-        </div>
+                    {/* Visual Gradient Cues */}
+                    {years.length > 4 && (
+                        <>
+                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-linear-to-l from-white/90 to-transparent pointer-events-none rounded-r-xl" />
+                            <div className="absolute left-0 top-0 bottom-0 w-4 bg-linear-to-r from-white/90 to-transparent pointer-events-none rounded-l-xl" />
+                        </>
+                    )}
+                </div>
+            </div>
 
         {/* The Responsive Data Container */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden">
           
           {/* DESKTOP VIEW: Traditional Table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                <tr className="bg-background border-b border-border text-foreground text-sm">
                   <th className="p-4 font-semibold uppercase tracking-wider">Meet</th>
                   <th className="p-4 font-semibold uppercase tracking-wider">Date & Time</th>
                   <th className="p-4 font-semibold uppercase tracking-wider">Level</th>
-                  <th className="p-4 font-semibold uppercase tracking-wider">Info / Location</th>
+                  <th className="p-4 font-semibold uppercase tracking-wider">Location</th>
+                  <th className="p-4 font-semibold uppercase tracking-wider">Results</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {currentMeets.map((meet) => (
-                  <tr key={meet.ID} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="p-4">
-                      <span className="font-bold text-lisle-blue">{meet.Meet}</span>
+                  <tr key={meet.ID} className="bg-background text-foreground">
+                    <td className="p-4 align-top">
+                      {meet.Info ? (
+                        <MeetInfoModal info={meet.Info} meetName={meet.Meet} />
+                      ) : (
+                        <span className="block">{meet.Meet}</span>
+                      )}
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center text-slate-700">
+                    <td className="p-4 align-top">
+                      <div className="flex items-center text-foreground">
                         <Calendar className="w-4 h-4 mr-2 text-light-blue" />
                         {new Date(meet.Date).toLocaleDateString('en-US', { 
-                          month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' 
+                          month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' 
                         })}
                       </div>
                       {meet.Time && (
-                        <div className="flex items-center text-slate-500 text-sm mt-1">
-                          <Clock className="w-4 h-4 mr-2 text-slate-400" />
-                          {meet.Time}
+                        <div className="flex items-center text-sm mt-1">
+                          <Clock className="w-4 h-4 mr-2 text-light-blue" />
+                          {formatTime(meet.Time)}
                         </div>
                       )}
                     </td>
-                    <td className="p-4 text-slate-600">
-                      {meet.Level || <span className="text-slate-300 italic">TBD</span>}
+                    <td className="p-4 align-top">
+                      {meet.Level || <span className="text-light-gray">All Runners</span>}
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 align-top">
                       {meet.Location ? (
-                         <div className="flex items-center text-sm text-slate-600">
-                           <MapPin className="w-4 h-4 mr-2 text-slate-400" />
+                         <a 
+                           href={`https://maps.google.com/?q=${encodeURIComponent(meet.Location)}`}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="inline-flex items-center text-sm hover:text-light-blue hover:underline transition-colors"
+                         >
+                           <MapPin className="w-4 h-4 mr-2 text-light-blue shrink-0" />
                            {meet.Location}
-                         </div>
+                         </a>
                       ) : (
-                        <span className="text-slate-400 text-sm italic">TBA</span>
+                        <span className="text-light-gray text-sm">TBA</span>
+                      )}
+                    </td>
+                    <td className="p-4 align-top">
+                      {meet.Results && meet.Results.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {meet.Results.map((result: MeetResult) => (
+                            result.Title && result.File ? (
+                              <Pill 
+                                key={result.ID} 
+                                title={result.Title} 
+                                href={result.File} 
+                                icon={<Trophy size={12} />} 
+                              />
+                            ) : null
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-light-gray text-sm">-</span>
                       )}
                     </td>
                   </tr>
+                  
                 ))}
+                
               </tbody>
             </table>
           </div>
 
           {/* MOBILE VIEW: Card Stack */}
-          <div className="md:hidden divide-y divide-slate-100">
+          <div className="md:hidden divide-y divide-border">
             {currentMeets.length > 0 ? currentMeets.map((meet) => (
-              <div key={meet.ID} className="p-4 space-y-3">
-                <h3 className="font-bold text-lisle-blue text-lg leading-tight">{meet.Meet}</h3>
+              <div key={meet.ID} className="p-4 space-y-3 bg-background text-foreground">
+                
+                <h3 className="text-lg leading-tight block">
+                  {meet.Info ? (
+                    <MeetInfoModal info={meet.Info} meetName={meet.Meet} />
+                  ) : (
+                    <span className="block">{meet.Meet}</span>
+                  )}
+                </h3>
                 
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center text-slate-600">
+                  <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-2 text-light-blue shrink-0" />
                     <span>
                       {new Date(meet.Date).toLocaleDateString('en-US', { 
-                        month: 'short', day: 'numeric', timeZone: 'UTC' 
+                        month: 'long', day: 'numeric', timeZone: 'UTC' 
                       })}
                     </span>
                   </div>
                   {meet.Time && (
-                    <div className="flex items-center text-slate-600">
-                      <Clock className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
-                      <span>{meet.Time}</span>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-light-blue shrink-0" />
+                      <span>{formatTime(meet.Time)}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                  <span className="text-sm text-slate-500">
-                    Level: <strong className="text-slate-700">{meet.Level || 'TBD'}</strong>
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <span className="text-sm">
+                    Level: <strong>{meet.Level || 'All Runners'}</strong>
                   </span>
                   
                   {meet.Location && (
-                    <span className="inline-flex items-center text-xs font-semibold text-slate-600">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      {meet.Location}
-                    </span>
+                    <a 
+                      href={`https://maps.google.com/?q=${encodeURIComponent(meet.Location)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-xs font-semibold hover:text-light-blue hover:underline transition-colors max-w-[60%] text-right justify-end"
+                    >
+                      <MapPin className="w-3 h-3 mr-1 text-light-blue shrink-0" />
+                      <span className="truncate">{meet.Location}</span>
+                    </a>
                   )}
                 </div>
+
+                {/* MOBILE RESULTS ROW */}
+                {meet.Results && meet.Results.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-3 mt-3 border-t border-border">
+                    <span className="text-xs font-bold text-light-gray uppercase tracking-wider">
+                      Results:
+                    </span>
+                    {meet.Results.map((result: MeetResult) => (
+                      result.Title && result.File ? (
+                        <Pill 
+                          key={result.ID} 
+                          title={result.Title} 
+                          href={result.File} 
+                          icon={<Trophy size={12} />} 
+                        />
+                      ) : null
+                    ))}
+                  </div>
+                )}
+
               </div>
             )) : (
-              <div className="p-8 text-center text-slate-500">
+              <div className="p-8 text-center text-light-gray">
                 No meets scheduled for this year yet.
               </div>
             )}
