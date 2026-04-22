@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { getScheduleByYear, getAvailableYears, type MeetResult } from '@/lib/queries';
 import { formatTime } from '@/lib/time';
 
-import MeetInfoModal from '@/components/MeetInfoModal';
+import GenericModal from '@/components/GenericModal';
 import Button from '@/components/Button';
 import Pill from '@/components/Pill';
 
@@ -81,7 +81,12 @@ export default async function SchedulePage({searchParams}: {
                   <tr key={meet.ID} className="bg-background text-foreground">
                     <td className="p-4 align-top">
                       {meet.Info ? (
-                        <MeetInfoModal info={meet.Info} meetName={meet.Meet} />
+                        <GenericModal 
+                          title={`${meet.Meet} Info`}
+                          content={meet.Info}
+                          trigger={meet.Meet}
+                          triggerClassName="font-bold text-foreground hover:text-light-blue transition-colors block w-full"
+                        />
                       ) : (
                         <span className="block">{meet.Meet}</span>
                       )}
@@ -151,7 +156,12 @@ export default async function SchedulePage({searchParams}: {
                 
                 <h3 className="text-lg leading-tight block">
                   {meet.Info ? (
-                    <MeetInfoModal info={meet.Info} meetName={meet.Meet} />
+                    <GenericModal 
+                      title={`${meet.Meet} Info`}
+                      content={meet.Info}
+                      trigger={meet.Meet}
+                      triggerClassName="font-bold text-foreground hover:text-light-blue transition-colors block w-full"
+                    />
                   ) : (
                     <span className="block">{meet.Meet}</span>
                   )}

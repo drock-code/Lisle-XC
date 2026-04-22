@@ -1,26 +1,31 @@
 import { pool } from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
+export interface MeetResult {
+  ID: number;
+  Title: string;
+  File: string;
+}
+
+export interface ScheduleRow extends RowDataPacket {
+  ID: number;
+  Meet: string;
+  Date: Date;
+  Time: string | null;
+  Location: string | null;
+  Level: string | null;
+  Info: string | null;
+  Results: MeetResult[] | null;
+}
+
+export interface FAQRow extends RowDataPacket {
+  Key: number;
+  Order: number;
+  Title: string;
+  Content: string;
+}
 
 /* SCHEDULE QUERIES */
-  export interface MeetResult {
-    ID: number;
-    Title: string;
-    File: string;
-  }
-
-  export interface ScheduleRow extends RowDataPacket {
-    ID: number;
-    Meet: string;
-    Date: Date;
-    Time: string | null;
-    Location: string | null;
-    Level: string | null;
-    Info: string | null;
-    Results: MeetResult[] | null;
-  }
-  
-
   // Automatically find all years that have meets in the database
   export async function getAvailableYears() {
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -81,3 +86,19 @@ import type { RowDataPacket } from 'mysql2';
     }));
   }
 /* END OF SCHEDULE QUERIES */
+
+/* FAQ QUERIES */
+  export async function getFAQs() {
+    const [rows] = await pool.query<FAQRow[]>(
+      'SELECT `Key`, `Order`, `Title`, `Content` FROM FAQ ORDER BY `Order` ASC'
+    );
+    return rows;
+  }
+
+  export async function getRandomFAQ() {
+    const [rows] = await pool.query<FAQRow[]>(
+      'SELECT `Key`, `Title`, `Content` FROM FAQ ORDER BY RAND() LIMIT 1'
+    );
+    return rows.length > 0 ? rows[0] : null;
+  }
+/* END OF FAQ QUERIES */
