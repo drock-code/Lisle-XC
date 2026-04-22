@@ -2,19 +2,22 @@
 
 import { useState } from 'react';
 import { Search, Menu, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname(); 
 
   const navLinks = [
-    { name: 'Home', active: true, href: '#' },
-    { name: 'FAQ', active: false, href: '#' },
-    { name: 'Schedule', active: false, href: '/schedule' },
-    { name: 'Results', active: false, href: '#' },
-    { name: 'Records', active: false, href: '#' },
-    { name: 'Links', active: false, href: '#' },
-    { name: 'View Runs', active: false, href: '#' },
-    { name: 'Sign In', active: false, href: '#' },
+    { name: 'Home', href: '/' },
+    { name: 'FAQ', href: '/faq' }, 
+    { name: 'Schedule', href: '/schedule' },
+    { name: 'Results', href: '/results' },
+    { name: 'Records', href: '/records' },
+    { name: 'Links', href: '/links' },
+    { name: 'View Runs', href: '/view-runs' },
+    { name: 'Sign In', href: '/sign-in' },
   ];
 
   return (
@@ -24,31 +27,36 @@ export const Navbar = () => {
           
           {/* Brand Logo */}
           <div className="shrink-0 flex items-center group">
-            <div className="flex flex-col">
+            <Link href="/" className="flex flex-col">
               <span className="font-heading font-bold text-xl md:text-2xl tracking-tighter uppercase leading-none">
                 Lisle
               </span>
               <span className="font-heading font-light text-xs md:text-sm tracking-[0.2em] uppercase leading-none text-light-blue">
                 Cross Country
               </span>
-            </div>
+            </Link>
           </div>
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex space-x-1 items-center">
-            {navLinks.map((link, index) => (
-              <a
-                key={index}
-                href={link.href}
-                className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 uppercase tracking-wide ${
-                  link.active 
-                  ? 'text-white bg-white/10' 
-                  : 'text-gray-200 hover:text-light-blue hover:bg-white/5'
-                }`}
-              >
-                {link.name}
-              </a>
-            ))}
+            {navLinks.map((link, index) => {
+              // 4. Check if the current URL matches the link's destination
+              const isActive = pathname === link.href;
+
+              return (
+                <Link
+                  key={index}
+                  href={link.href}
+                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200 uppercase tracking-wide ${
+                    isActive 
+                    ? 'text-white bg-white/10' 
+                    : 'text-gray-200 hover:text-light-blue hover:bg-white/5'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
             
             {/* Desktop Search */}
             <div className="ml-4 flex items-center bg-black/20 rounded-full pl-4 pr-1 py-1 border border-white/10 focus-within:border-light-blue transition-all">
@@ -79,17 +87,22 @@ export const Navbar = () => {
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-lisle-blue border-t border-white/10 animate-in slide-in-from-top duration-300">
           <div className="px-2 pt-2 pb-6 space-y-1">
-            {navLinks.map((link, index) => (
-              <a
-                key={index}
-                href={link.href}
-                className={`block px-4 py-3 rounded-md text-base font-medium ${
-                  link.active ? 'text-light-blue bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                {link.name}
-              </a>
-            ))}
+            {navLinks.map((link, index) => {
+              const isActive = pathname === link.href;
+
+              return (
+                <Link
+                  key={index}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)} // Close menu when clicked!
+                  className={`block px-4 py-3 rounded-md text-base font-medium ${
+                    isActive ? 'text-light-blue bg-white/10' : 'text-light-gray hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

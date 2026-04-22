@@ -1,7 +1,8 @@
-import { Calendar } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 
 import Button from "@/components/Button";
+import MeetInfoModal from "@/components/MeetInfoModal";
 import { getUpcomingMeets } from "@/lib/queries";
 import { formatTime } from "@/lib/time";
 
@@ -21,34 +22,40 @@ export default async function UpcomingMeets() {
         {/* Check if we have meets. If yes, map them; if no, show a fallback message. */}
         {upcomingMeets.length > 0 ? (
           upcomingMeets.map((meet) => (
-            <div key={meet.ID} className="group cursor-pointer">
-              <p className="text-xs font-bold text-light-blue uppercase mb-1">
+            <div key={meet.ID} className="flex flex-col gap-1">
+              <p className="text-xs font-bold text-light-blue uppercase">
                 {new Date(meet.Date).toLocaleDateString('en-US', { 
                   month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' 
                 })}
                 {meet.Time && ` @ ${formatTime(meet.Time)}`}
               </p>
-              {meet.Location ? (
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meet.Location)}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <h4 className="font-body text-lg font-bold text-foreground group-hover:text-light-blue transition-colors">
-                    {meet.Meet}
-                </h4>
-              </a>
-              ) : (
-            <h4 className="font-body text-lg font-bold text-foreground">
-              {meet.Meet}
-            </h4>
-          )}
-  
-            <p className="text-sm text-light-gray font-medium">
-              {meet.Location || 'Location TBA'}
-            </p>
-          </div>
+              
+              {/* MEET TITLE: Triggers Modal if Info exists */}
+              <h4 className="font-body text-lg text-foreground transition-colors">
+                {meet.Info ? (
+                  <MeetInfoModal info={meet.Info} meetName={meet.Meet} />
+                ) : (
+                  meet.Meet
+                )}
+              </h4>
+      
+              {/* LOCATION: Links to Google Maps if Location exists */}
+              <div className="text-sm font-medium">
+                {meet.Location ? (
+                  <a 
+  href={`https://maps.google.com/?q=${encodeURIComponent(meet.Location)}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="inline-flex items-center text-light-gray hover:text-light-blue hover:underline transition-colors"
+>
+  <MapPin className="w-4 h-4 mr-1 shrink-0" />
+  {meet.Location}
+</a>
+                ) : (
+                  <span className="text-light-gray">Location TBA</span>
+                )}
+              </div>
+            </div>
           ))
         ) : (
           <div className="text-sm text-light-gray font-medium">

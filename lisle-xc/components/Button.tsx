@@ -1,20 +1,21 @@
 import React from 'react';
 
-// 1. Define the exact props this component accepts
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg'; 
-  children: React.ReactNode; // This represents the text/content inside the button
+  isActive?: boolean; // <-- 1. Add this new prop
+  children: React.ReactNode; 
 }
 
 export default function Button({ 
   size = 'md', 
+  isActive = false, // <-- Default to false
   children, 
-  className = '', // Allow adding extra custom classes if needed
+  className = '', 
   ...props 
 }: ButtonProps) {
   
-  // 2. The core styles that every button gets
-  const baseClasses = "bg-lisle-blue text-white rounded-full font-bold uppercase tracking-widest hover:bg-light-blue transition-all duration-300 shadow-lg shadow-lisle-blue/20 cursor-pointer";
+  // 2. Base classes (Layout, sizing, and transitions only - no colors!)
+  const baseClasses = "rounded-full font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer";
 
   const sizeClasses = {
     sm: "px-6 py-2 text-xs",
@@ -22,9 +23,14 @@ export default function Button({
     lg: "px-10 py-4 text-base",
   };
 
+  // 3. Apply colors strictly based on whether the button is active
+  const colorClasses = isActive 
+    ? "bg-white text-lisle-blue scale-105 shadow-md" 
+    : "bg-lisle-blue text-white hover:bg-light-blue shadow-lg shadow-lisle-blue/20";
+
   return (
     <button 
-      className={`${baseClasses} ${sizeClasses[size]} ${className}`}
+      className={`${baseClasses} ${sizeClasses[size]} ${colorClasses} ${className}`}
       {...props}
     >
       {children}
