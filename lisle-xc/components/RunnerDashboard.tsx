@@ -1,158 +1,26 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { User, Calendar, Map, Activity, ChevronDown } from 'lucide-react';
-import type { ProcessedResult } from '@/lib/runner-utils';
-import type { RunnerProfileRow } from '@/lib/queries';
 
-// We extend the processed result just for the component to hold our math
-interface ChartableResult extends ProcessedResult {
-  JH?: number; 
-  seconds: number;
-  paceSeconds: number; // Add this line to hold the raw pace math
-  pace: string;
-  DisplayTime: string;
-}
+import { PerformanceChart } from '@/components/PerformanceChart';
+
+import type { RunnerProfileRow } from '@/lib/queries';
+import { timeToSeconds, secondsToTime, getDistanceInMiles } from '@/lib/utils';
+import type { ProcessedResult } from '@/lib/runner-utils';
 
 interface RunnerDashboardProps {
   runner: RunnerProfileRow;
   results: ProcessedResult[];
 }
 
-// --- UTILITY FUNCTIONS ---
-const timeToSeconds = (timeStr: string) => {
-  const parts = timeStr.split(':').map(Number);
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  return parts[0] * 60 + parts[1];
-};
-
-const secondsToTime = (totalSeconds: number) => {
-  const m = Math.floor(totalSeconds / 60);
-  const s = Math.round(totalSeconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
-
-const getDistanceInMiles = (distance: number, unit: string) => {
-  const normalizedUnit = unit?.toLowerCase() || '';
-  
-  // Convert Kilometers (5K, 3K, etc.) to Miles
-  if (normalizedUnit.includes('k') || normalizedUnit === 'kilometers') {
-    return distance * 0.621371;
-  }
-  // Convert Meters (5000m, 3200m) to Miles
-  if (normalizedUnit === 'meters' || normalizedUnit === 'm') {
-    return distance / 1609.344;
-  }
-  
-  // If it's already "Miles" or "mi", just return the number
-  return distance;
-};
-
-// --- CUSTOM SVG CHART COMPONENT ---
-const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
-  if (!data || data.length === 0) {
-    return <div className="h-72 flex items-center justify-center text-slate-400 italic">No race data available for this view.</div>;
-  }
-
-  // Calculate scales based on PACE instead of total time
-  const paces = data.map(d => d.paceSeconds);
-  const minPace = Math.min(...paces);
-  const maxPace = Math.max(...paces);
-  const pacePadding = (maxPace - minPace) * 0.1 || 15; // Add a little padding to the top/bottom of the chart
-
-  // In XC, faster (lower) paces go UP.
-  const getY = (paceSec: number) => {
-    const range = (maxPace + pacePadding) - (minPace - pacePadding);
-    const val = paceSec - (minPace - pacePadding);
-    return (val / range) * 100;
-  };
-
-  const getX = (index: number) => {
-    if (data.length === 1) return 50;
-    return (index / (data.length - 1)) * 90 + 5; // 5% to 95% width
-  };
-
-  return (
-    <div className="relative w-full h-80 bg-slate-50/50 rounded-xl border border-slate-100 p-4 mt-6">
-      {/* Y-Axis Labels (Now showing Pace) */}
-      <div className="absolute left-4 top-4 bottom-8 w-12 flex flex-col justify-between text-xs text-slate-400 font-medium z-10">
-        <span>{secondsToTime(minPace - pacePadding)}</span>
-        <span>{secondsToTime(minPace + (maxPace - minPace) / 2)}</span>
-        <span>{secondsToTime(maxPace + pacePadding)}</span>
-      </div>
-
-      <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
-        {/* Grid Lines */}
-        <line x1="15%" y1="0%" x2="100%" y2="0%" stroke="#e2e8f0" strokeDasharray="4 4" />
-        <line x1="15%" y1="50%" x2="100%" y2="50%" stroke="#e2e8f0" strokeDasharray="4 4" />
-        <line x1="15%" y1="100%" x2="100%" y2="100%" stroke="#e2e8f0" strokeDasharray="4 4" />
-
-        {/* The Data Line Segments */}
-        {data.map((d, i) => {
-          if (i === 0) return null; 
-          const prev = data[i - 1];
-          return (
-            <line
-              key={`line-${i}`}
-              x1={`${getX(i - 1)}%`}
-              y1={`${getY(prev.paceSeconds)}%`}
-              x2={`${getX(i)}%`}
-              y2={`${getY(d.paceSeconds)}%`}
-              stroke="#0ea5e9"
-              strokeWidth="3"
-              strokeLinecap="round"
-              className="drop-shadow-md"
-            />
-          );
-        })}
-
-        {/* Data Points & Interaction */}
-        {data.map((d, i) => {
-          const isHovered = hoveredIndex === i;
-          const xPercent = getX(i);
-          const yPercent = getY(d.paceSeconds);
-
-          return (
-            <g key={`point-${i}`} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)}>
-              <circle cx={`${xPercent}%`} cy={`${yPercent}%`} r="15" fill="transparent" className="cursor-pointer" />
-              
-              {d.isLifetimePR ? (
-                <svg x={`calc(${xPercent}% - ${isHovered ? 14 : 10}px)`} y={`calc(${yPercent}% - ${isHovered ? 14 : 10}px)`} width={isHovered ? 28 : 20} height={isHovered ? 28 : 20} viewBox="0 0 24 24" fill="#fcd34d" stroke="#d97706" strokeWidth="2" className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              ) : d.isSeasonPR ? (
-                <svg x={`calc(${xPercent}% - ${isHovered ? 10 : 7}px)`} y={`calc(${yPercent}% - ${isHovered ? 10 : 7}px)`} width={isHovered ? 20 : 14} height={isHovered ? 20 : 14} viewBox="0 0 24 24" fill="#10b981" stroke="#047857" strokeWidth="3" className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm">
-                   <polygon points="12 2 22 12 12 22 2 12" />
-                </svg>
-              ) : (
-                <circle cx={`${xPercent}%`} cy={`${yPercent}%`} r={isHovered ? "6" : "4"} fill={isHovered ? "#0284c7" : "#fff"} stroke="#0ea5e9" strokeWidth="3" className="transition-all duration-200 cursor-pointer" />
-              )}
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Custom Tooltip */}
-      {hoveredIndex !== null && (
-        <div 
-          className="absolute z-20 bg-slate-900 text-white text-sm rounded-lg py-2 px-3 shadow-xl transform -translate-x-1/2 -translate-y-full pointer-events-none transition-all"
-          style={{ left: `${getX(hoveredIndex)}%`, top: `calc(${getY(data[hoveredIndex].paceSeconds)}% - 12px)` }}
-        >
-          <div className="font-bold text-sky-400 mb-1">{data[hoveredIndex].DisplayTime}</div>
-          {data[hoveredIndex].isLifetimePR && <div className="text-amber-400 text-xs font-bold mb-1">⭐ Lifetime PR</div>}
-          {data[hoveredIndex].isSeasonPR && !data[hoveredIndex].isLifetimePR && <div className="text-emerald-400 text-xs font-bold mb-1">♦️ Season PR</div>}
-          <div className="text-slate-300 text-xs whitespace-nowrap">{data[hoveredIndex].MeetName}</div>
-          <div className="text-slate-400 text-xs mt-1 border-t border-slate-700 pt-1">
-            Pace: {data[hoveredIndex].pace}/mi
-          </div>
-          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
-        </div>
-      )}
-    </div>
-  );
-};
+interface ChartableResult extends ProcessedResult {
+  JH?: number; 
+  seconds: number;
+  paceSeconds: number; 
+  pace: string;
+  DisplayTime: string;
+}
 
 // --- MAIN DASHBOARD COMPONENT ---
 export default function RunnerDashboard({ runner, results }: RunnerDashboardProps) {
@@ -184,8 +52,8 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
         ...r,
         seconds: sec,
         DisplayTime: cleanTime,
-        paceSeconds: paceSec,                 // Added this so the chart can do math with it
-        pace: secondsToTime(paceSec)          // This stays a formatted string for display
+        paceSeconds: paceSec,                 
+        pace: secondsToTime(paceSec)          
       };
     });
   }, [results]);
@@ -223,11 +91,11 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
   }, [filteredResults]);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 mt-1.5">
       
       {/* Header Section */}
-      <div className="bg-white rounded-[2rem] p-6 md:p-10 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-sky-100 border-4 border-white shadow-lg flex items-center justify-center shrink-0 text-sky-500 overflow-hidden">
+      <div className="bg-background rounded-4xl p-6 md:p-10 shadow-sm border border-border flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-light-blue-gray border-4 border-border shadow-lg flex items-center justify-center shrink-0 text-foreground overflow-hidden">
            {runner.AvatarURL ? (
              <img src={runner.AvatarURL} alt={runner.Name} className="w-full h-full object-cover" />
            ) : (
@@ -238,11 +106,11 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
         <div className="text-center md:text-left flex-1 w-full">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight">
                 {runner.Name}
               </h1>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3 text-sky-600 font-medium">
-                <span className="flex items-center gap-1 bg-sky-50 px-3 py-1 rounded-full text-sm">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3 text-foreground font-medium">
+                <span className="flex items-center gap-1 bg-light-blue-gray px-3 py-1 rounded-full text-sm">
                   <Calendar size={16} /> Grade {runner.Grade}
                 </span>
               </div>
@@ -250,16 +118,16 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
             
             {/* Level Tabs - Only show if the runner has BOTH levels */}
             {(hasHS && hasJH) && (
-              <div className="flex bg-slate-100 rounded-xl p-1 shadow-inner shrink-0 w-full md:w-auto">
+              <div className="flex bg-light-blue-gray rounded-xl p-1 shadow-inner shrink-0 w-full md:w-auto">
                 <button 
                   onClick={() => setActiveTab('HS')}
-                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'HS' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'HS' ? 'bg-background text-foreground shadow-sm' : 'text-foreground hover:text-background'}`}
                 >
                   High School
                 </button>
                 <button 
                   onClick={() => setActiveTab('JH')}
-                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'JH' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'JH' ? 'bg-background text-foreground shadow-sm' : 'text-foreground hover:text-background'}`}
                 >
                   Junior High
                 </button>
@@ -344,7 +212,11 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
             <tbody className="divide-y divide-slate-100">
               {/* Reverse so the newest races are at the top of the table */}
               {chartData.slice().reverse().map((result, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                <tr 
+                  key={idx} 
+                  // Added odd:bg-white and even:bg-light-gray to create the alternating effect!
+                  className="odd:bg-white even:bg-light-blue-gray"
+                >
                   <td className="p-4 text-sm text-slate-600 font-medium">
                     {new Date(result.Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
                   </td>

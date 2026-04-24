@@ -159,3 +159,16 @@ export interface RunnerResultRow extends RowDataPacket {
     };
   }
 /* END OF RUNNER PROFILE QUERIES */
+
+/* SEARCH QUERIES */
+  export async function searchRunners(searchTerm: string) {
+    const searchPattern = `%${searchTerm}%`;
+
+    const [rows] = await pool.query<RunnerProfileRow[]>(
+      'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Name` LIKE ? ORDER BY `Name` ASC LIMIT 50',
+      [searchPattern]
+    );
+
+    return rows;
+  }
+/* END OF SEARCH QUERIES */

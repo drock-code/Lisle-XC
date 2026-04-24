@@ -29,7 +29,6 @@ export default async function RunnerProfilePage({ params }: { params: Promise<{ 
 
   if (isNaN(runnerId)) notFound();
 
-  // Fetch the data
   const data = await getRunnerProfile(runnerId);
   if (!data) notFound();
 
@@ -37,8 +36,6 @@ export default async function RunnerProfilePage({ params }: { params: Promise<{ 
   const processedResults = processRunnerResults(data.results);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans p-4 md:p-8">
       <RunnerDashboard runner={data.runner} results={processedResults} />
-    </div>
   );
 }
