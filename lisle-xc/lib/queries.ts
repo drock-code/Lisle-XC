@@ -25,6 +25,24 @@ export interface FAQRow extends RowDataPacket {
   Content: string;
 }
 
+export interface RunnerProfileRow extends RowDataPacket {
+  Key: number;
+  Name: string;
+  Grade: number;
+  Gender: string;
+  AvatarURL: string | null;
+}
+
+export interface RunnerResultRow extends RowDataPacket {
+  MeetName: string;
+  Date: Date;
+  Season: number;
+  Distance: string;
+  DistanceUnit: string;
+  Time: string;
+  Grade: number;
+}
+
 /* SCHEDULE QUERIES */
   // Automatically find all years that have meets in the database
   export async function getAvailableYears() {
@@ -102,3 +120,42 @@ export interface FAQRow extends RowDataPacket {
     return rows.length > 0 ? rows[0] : null;
   }
 /* END OF FAQ QUERIES */
+
+/* RUNNER PROFILE QUERIES */
+  export async function getRunnerProfile(runnerId: number | string) {
+    // Fetch the basic runner information
+    const [runnerRows] = await pool.query<RunnerProfileRow[]>(
+      'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Key` = ?',
+      [runnerId]
+    );
+
+    if (runnerRows.length === 0) {
+      return null;
+    }
+
+    // Fetch all of their historical race results
+    const [resultRows] = await pool.query<RunnerResultRow[]>(
+      `SELECT 
+          m.Name AS MeetName,
+          m.Date,
+          m.Season,
+          rt.Distance,
+          rt.DistanceUnit,
+          rr.Time,
+          rr.Grade,
+          mr.JH
+      FROM RunnerResult rr
+      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      JOIN Meet m ON mr.MeetID = m.MeetKey
+      JOIN Route rt ON mr.RouteKey = rt.RouteKey
+      WHERE rr.RunnerID = ? AND rr.Time != '00:00:00'
+      ORDER BY m.Date ASC`,
+      [runnerId]
+    );
+
+    return {
+      runner: runnerRows[0],
+      results: resultRows
+    };
+  }
+/* END OF RUNNER PROFILE QUERIES */
