@@ -37,19 +37,19 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
   };
 
   return (
-    <div className="relative w-full h-80 bg-slate-50/50 rounded-xl border border-slate-100 p-4 mt-6">
-      {/* Y-Axis Labels (Pace) */}
-      <div className="absolute left-4 top-4 bottom-8 w-12 flex flex-col justify-between text-xs text-slate-400 font-medium z-10">
-        <span>{secondsToTime(minPace - pacePadding)}</span>
-        <span>{secondsToTime(minPace + (maxPace - minPace) / 2)}</span>
-        <span>{secondsToTime(maxPace + pacePadding)}</span>
-      </div>
+    <div className="relative w-full h-80 bg-background rounded-xl border border-foreground p-4 mt-6">
+        {/* Y-Axis Labels (Pace) */}
+        <div className="absolute left-4 top-4 bottom-8 w-12 flex flex-col justify-between text-xs text-foreground font-medium z-10 pointer-events-none">
+            <span>{secondsToTime(minPace - pacePadding)}</span>
+            <span>{secondsToTime(minPace + (maxPace - minPace) / 2)}</span>
+            <span>{secondsToTime(maxPace + pacePadding)}</span>
+        </div>
 
       <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
         {/* Grid Lines */}
-        <line x1="15%" y1="0%" x2="100%" y2="0%" stroke="#e2e8f0" strokeDasharray="4 4" />
-        <line x1="15%" y1="50%" x2="100%" y2="50%" stroke="#e2e8f0" strokeDasharray="4 4" />
-        <line x1="15%" y1="100%" x2="100%" y2="100%" stroke="#e2e8f0" strokeDasharray="4 4" />
+        <line x1="5%" y1="0%" x2="100%" y2="0%" stroke="var(--foreground)" strokeDasharray="4 4" />
+        <line x1="5%" y1="50%" x2="100%" y2="50%" stroke="var(--foreground)" strokeDasharray="4 4" />
+        <line x1="5%" y1="100%" x2="100%" y2="100%" stroke="var(--foreground)" strokeDasharray="4 4" />
 
         {/* The Data Line Segments */}
         {data.map((d, i) => {
@@ -99,7 +99,7 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
       {/* Custom Tooltip */}
       {hoveredIndex !== null && (
         <div 
-          className="absolute z-20 bg-slate-900 text-white text-sm rounded-lg py-2 px-3 shadow-xl transform -translate-x-1/2 -translate-y-full pointer-events-none transition-all"
+          className="absolute z-20 w-max bg-slate-900 text-white text-sm rounded-lg py-2 px-3 shadow-xl transform -translate-x-1/2 -translate-y-full pointer-events-none transition-all"
           style={{ left: `${getX(hoveredIndex)}%`, top: `calc(${getY(data[hoveredIndex].paceSeconds)}% - 12px)` }}
         >
           <div className="font-bold text-sky-400 mb-1">{data[hoveredIndex].DisplayTime}</div>

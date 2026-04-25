@@ -95,7 +95,7 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
       
       {/* Header Section */}
       <div className="bg-background rounded-4xl p-6 md:p-10 shadow-sm border border-border flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-light-blue-gray border-4 border-border shadow-lg flex items-center justify-center shrink-0 text-foreground overflow-hidden">
+        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-light-blue-gray border-4 border-foreground shadow-lg flex items-center justify-center shrink-0 text-foreground overflow-hidden">
            {runner.AvatarURL ? (
              <img src={runner.AvatarURL} alt={runner.Name} className="w-full h-full object-cover" />
            ) : (
@@ -109,7 +109,7 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
               <h1 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight">
                 {runner.Name}
               </h1>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3 text-foreground font-medium">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3 text-lisle-blue font-medium">
                 <span className="flex items-center gap-1 bg-light-blue-gray px-3 py-1 rounded-full text-sm">
                   <Calendar size={16} /> Grade {runner.Grade}
                 </span>
@@ -121,13 +121,13 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
               <div className="flex bg-light-blue-gray rounded-xl p-1 shadow-inner shrink-0 w-full md:w-auto">
                 <button 
                   onClick={() => setActiveTab('HS')}
-                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'HS' ? 'bg-background text-foreground shadow-sm' : 'text-foreground hover:text-background'}`}
+                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'HS' ? 'bg-background text-foreground shadow-sm' : 'text-lisle-blue hover:text-background cursor-pointer'}`}
                 >
                   High School
                 </button>
                 <button 
                   onClick={() => setActiveTab('JH')}
-                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'JH' ? 'bg-background text-foreground shadow-sm' : 'text-foreground hover:text-background'}`}
+                  className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'JH' ? 'bg-background text-foreground shadow-sm' : 'text-lisle-blue hover:text-background cursor-pointer'}`}
                 >
                   Junior High
                 </button>
@@ -140,31 +140,31 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
       {/* PR Highlights Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {Object.entries(lifetimePRs).map(([distance, result]) => (
-          <div key={distance} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2">
+          <div key={distance} className="bg-background rounded-2xl p-6 border border-border shadow-sm relative overflow-hidden group">
+            <p className="text-xs font-bold text-foreground uppercase tracking-widest mb-1 flex items-center gap-2">
               <Map size={14} /> {distance} PR
             </p>
-            <h2 className="text-4xl font-extrabold text-sky-500 my-2">{result.DisplayTime}</h2>
-            <p className="text-sm text-slate-500 font-medium truncate">{result.MeetName}</p>
-            <p className="text-xs text-slate-400 mt-1">{result.Season} Season • Pace: {result.pace}</p>
+            <h2 className="text-4xl font-extrabold text-light-blue my-2">{result.DisplayTime}</h2>
+            <p className="text-sm text-foreground font-medium truncate">{result.MeetName}</p>
+            <p className="text-xs text-foreground mt-1">{result.Season} Season • Pace: {result.pace}</p>
           </div>
         ))}
         {Object.keys(lifetimePRs).length === 0 && (
-          <div className="col-span-3 text-center py-8 text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed">
+          <div className="col-span-3 text-center py-8 text-foreground bg-background rounded-2xl border border-border border-dashed">
             No Personal Records found for this level.
           </div>
         )}
       </div>
 
       {/* Interactive Chart Section */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
+      <div className="bg-background rounded-3xl p-6 md:p-8 border border-border shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-sky-100 text-sky-600 rounded-lg">
+              <div className="p-2 text-foreground rounded-lg">
                 <Activity size={24} />
               </div>
-              <h3 className="text-2xl font-bold text-slate-800 mr-2">Performance Trends</h3>
+              <h3 className="text-2xl font-bold text-foreground mr-2">Performance Trends</h3>
             </div>
             
             {/* Chart Legend */}
@@ -184,7 +184,7 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
             <select 
               value={selectedSeason} 
               onChange={(e) => setSelectedSeason(e.target.value === 'Career' ? 'Career' : Number(e.target.value))}
-              className="w-full md:w-48 appearance-none bg-slate-50 border border-slate-200 text-slate-700 font-medium py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent cursor-pointer"
+              className="w-full md:w-48 appearance-none bg-slate-50 border border-border text-slate-700 font-medium py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent cursor-pointer"
             >
               <option value="Career">Career View</option>
               {availableSeasons.map(s => <option key={s} value={s}>{s} Season</option>)}
@@ -197,11 +197,11 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+      <div className="bg-background rounded-3xl overflow-hidden border border-border shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+              <tr className="bg-background border-b border-border text-foreground text-xs uppercase tracking-wider">
                 <th className="p-4 font-bold">Date</th>
                 <th className="p-4 font-bold">Meet Name</th>
                 <th className="p-4 font-bold">Distance</th>
@@ -209,24 +209,23 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
                 <th className="p-4 font-bold text-right">Avg Pace</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {/* Reverse so the newest races are at the top of the table */}
               {chartData.slice().reverse().map((result, idx) => (
                 <tr 
                   key={idx} 
-                  // Added odd:bg-white and even:bg-light-gray to create the alternating effect!
-                  className="odd:bg-white even:bg-light-blue-gray"
+                  className="text-foreground odd:bg-background even:bg-background/75"
                 >
-                  <td className="p-4 text-sm text-slate-600 font-medium">
+                  <td className="p-4 text-sm font-medium">
                     {new Date(result.Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
                   </td>
-                  <td className="p-4 text-sm text-slate-800 font-bold">
+                  <td className="p-4 text-sm font-bold">
                     {result.MeetName}
                   </td>
-                  <td className="p-4 text-sm text-slate-500">
+                  <td className="p-4 text-sm">
                     {result.FormattedDistance}
                   </td>
-                  <td className="p-4 text-sm text-sky-600 font-bold text-right">
+                  <td className="p-4 text-sm font-bold text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       {result.isLifetimePR && (
                         <svg title="Lifetime PR" width="14" height="14" viewBox="0 0 24 24" fill="#fcd34d" stroke="#d97706" strokeWidth="2">
@@ -241,8 +240,8 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
                       {result.DisplayTime}
                     </div>
                   </td>
-                  <td className="p-4 text-sm text-slate-500 text-right">
-                    {result.pace} /mi
+                  <td className="p-4 text-sm text-right">
+                    {result.pace}/mi
                   </td>
                 </tr>
               ))}
