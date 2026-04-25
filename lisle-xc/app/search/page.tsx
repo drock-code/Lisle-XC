@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { User } from 'lucide-react';
+
 import { searchRunners } from '@/lib/queries'; 
 import { generateSlug } from '@/lib/utils';
 
@@ -13,7 +15,7 @@ export default async function SearchPage({
   if (!query) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <section className="bg-background backdrop-blur-md rounded-2xl overflow-hidden border-border border-x border-t shadow-lg">
+        <section className="bg-background backdrop-blur-md rounded-2xl overflow-hidden border-border border shadow-lg">
           <div className="p-8 md:p-12 text-center">
             <h2 className="font-heading font-bold text-3xl md:text-4xl text-foreground uppercase tracking-tight mb-4 leading-tight">
               Please enter a search term
@@ -60,11 +62,11 @@ export default async function SearchPage({
                 >
                   <div className="flex items-center gap-4">
                     {/* Avatar - matches the hover state colors */}
-                    <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center shrink-0 overflow-hidden text-white group-hover:bg-lisle-blue/10 group-hover:text-lisle-blue transition-colors">
+                    <div className="w-14 h-14 rounded-full bg-light-blue-gray flex items-center justify-center border border-border shrink-0 overflow-hidden text-foreground group-hover:bg-lisle-blue/10 group-hover:text-lisle-blue transition-colors">
                       {runner.AvatarURL ? (
                         <img src={runner.AvatarURL} alt={runner.Name} className="w-full h-full object-cover" />
                       ) : (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <User size={80} strokeWidth={1.5} className="mt-6" />
                       )}
                     </div>
                     

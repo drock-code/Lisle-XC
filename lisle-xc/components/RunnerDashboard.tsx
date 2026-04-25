@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { User, Calendar, Map, Activity, ChevronDown } from 'lucide-react';
 
 import { PerformanceChart } from '@/components/PerformanceChart';
+import { LifetimePRIcon, SeasonPRIcon } from '@/components/Icons';
 
 import type { RunnerProfileRow } from '@/lib/queries';
 import { timeToSeconds, secondsToTime, getDistanceInMiles } from '@/lib/utils';
@@ -22,7 +23,6 @@ interface ChartableResult extends ProcessedResult {
   DisplayTime: string;
 }
 
-// --- MAIN DASHBOARD COMPONENT ---
 export default function RunnerDashboard({ runner, results }: RunnerDashboardProps) {
   // Check if the runner has records for each level
   const hasHS = results.some(r => r.JH !== 1);
@@ -32,8 +32,8 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
   const [activeTab, setActiveTab] = useState<'HS' | 'JH'>(hasHS ? 'HS' : 'JH');
   const [selectedSeason, setSelectedSeason] = useState<number | 'Career'>('Career');
 
-// Process data for charts and PRs
-  const processedResults = useMemo(() => {
+  // Process data for charts and PRs
+  const processedResults = useMemo<ChartableResult[]>(() => {
     return results.map(r => {
       const sec = timeToSeconds(r.Time);
       const distNum = parseFloat(r.Distance);
@@ -49,13 +49,13 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
       }
 
       return {
-        ...r,
-        seconds: sec,
-        DisplayTime: cleanTime,
-        paceSeconds: paceSec,                 
-        pace: secondsToTime(paceSec)          
-      };
-    });
+      ...r,
+      seconds: sec,
+      DisplayTime: cleanTime,
+      paceSeconds: paceSec,                 
+      pace: secondsToTime(paceSec)          
+    } as ChartableResult;
+  });
   }, [results]);
 
   // Filter by High School vs Junior High
@@ -168,28 +168,28 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
             </div>
             
             {/* Chart Legend */}
-            <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-               <div className="flex items-center gap-1.5">
-                 <svg width="12" height="12" viewBox="0 0 24 24" fill="#fcd34d" stroke="#d97706" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                 Lifetime PR
-               </div>
-               <div className="flex items-center gap-1.5">
-                 <svg width="10" height="10" viewBox="0 0 24 24" fill="#10b981" stroke="#047857" strokeWidth="3"><polygon points="12 2 22 12 12 22 2 12" /></svg>
-                 Season PR
-               </div>
+            <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-lisle-blue bg-light-blue-gray px-3 py-1.5 rounded-full border border-border">
+              <div className="flex items-center gap-1.5">
+                <LifetimePRIcon width="12" height="12" />
+                  Lifetime PR
+              </div>
+              <div className="flex items-center gap-1.5">
+                <SeasonPRIcon width="10" height="10" />
+                  Season PR
+                </div>
+              </div>
             </div>
-          </div>
           
           <div className="relative w-full md:w-auto">
             <select 
               value={selectedSeason} 
               onChange={(e) => setSelectedSeason(e.target.value === 'Career' ? 'Career' : Number(e.target.value))}
-              className="w-full md:w-48 appearance-none bg-slate-50 border border-border text-slate-700 font-medium py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent cursor-pointer"
+              className="w-full md:w-48 appearance-none bg-background border border-border text-foreground font-medium py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:light-blue-gray focus:border-transparent cursor-pointer"
             >
               <option value="Career">Career View</option>
               {availableSeasons.map(s => <option key={s} value={s}>{s} Season</option>)}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground pointer-events-none" size={16} />
           </div>
         </div>
 
@@ -227,16 +227,8 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
                   </td>
                   <td className="p-4 text-sm font-bold text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      {result.isLifetimePR && (
-                        <svg title="Lifetime PR" width="14" height="14" viewBox="0 0 24 24" fill="#fcd34d" stroke="#d97706" strokeWidth="2">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      )}
-                      {result.isSeasonPR && !result.isLifetimePR && (
-                        <svg title="Season PR" width="12" height="12" viewBox="0 0 24 24" fill="#10b981" stroke="#047857" strokeWidth="3">
-                          <polygon points="12 2 22 12 12 22 2 12" />
-                        </svg>
-                      )}
+                      {result.isLifetimePR && <LifetimePRIcon />}
+                      {result.isSeasonPR && !result.isLifetimePR && <SeasonPRIcon />}
                       {result.DisplayTime}
                     </div>
                   </td>

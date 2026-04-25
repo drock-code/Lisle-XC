@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LifetimePRIcon, SeasonPRIcon, DataPointCircle } from '@/components/Icons';
 
 import type { ProcessedResult } from '@/lib/runner-utils';
 import { secondsToTime } from '@/lib/utils';
@@ -15,7 +16,7 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (!data || data.length === 0) {
-    return <div className="h-72 flex items-center justify-center text-slate-400 italic">No race data available for this view.</div>;
+    return <div className="h-72 flex items-center justify-center text-foreground italic">No race data available for this view.</div>;
   }
 
   // Calculate scales based on PACE instead of total time
@@ -38,12 +39,15 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
 
   return (
     <div className="relative w-full h-80 bg-background rounded-xl border border-foreground p-4 mt-6">
-        {/* Y-Axis Labels (Pace) */}
-        <div className="absolute left-4 top-4 bottom-8 w-12 flex flex-col justify-between text-xs text-foreground font-medium z-10 pointer-events-none">
-            <span>{secondsToTime(minPace - pacePadding)}</span>
-            <span>{secondsToTime(minPace + (maxPace - minPace) / 2)}</span>
-            <span>{secondsToTime(maxPace + pacePadding)}</span>
-        </div>
+      {/* Y-Axis Labels (Pace) */}
+      <div className="absolute inset-y-4 left-4 w-12 text-xs text-slate-400 font-medium z-10 pointer-events-none">
+        {/* Top Label -> 0% */}
+        <span className="absolute top-0 -translate-y-1/2">{secondsToTime(minPace - pacePadding)}</span>
+        {/* Middle Label -> 50% */}
+        <span className="absolute top-1/2 -translate-y-1/2">{secondsToTime(minPace + (maxPace - minPace) / 2)}</span>
+        {/* Bottom Label -> 100% */}
+        <span className="absolute top-full -translate-y-1/2">{secondsToTime(maxPace + pacePadding)}</span>
+      </div>
 
       <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
         {/* Grid Lines */}
@@ -81,15 +85,29 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
               <circle cx={`${xPercent}%`} cy={`${yPercent}%`} r="15" fill="transparent" className="cursor-pointer" />
               
               {d.isLifetimePR ? (
-                <svg x={`calc(${xPercent}% - ${isHovered ? 14 : 10}px)`} y={`calc(${yPercent}% - ${isHovered ? 14 : 10}px)`} width={isHovered ? 28 : 20} height={isHovered ? 28 : 20} viewBox="0 0 24 24" fill="#fcd34d" stroke="#d97706" strokeWidth="2" className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
+                <LifetimePRIcon 
+                  x={`calc(${xPercent}% - ${isHovered ? 14 : 10}px)`} 
+                  y={`calc(${yPercent}% - ${isHovered ? 14 : 10}px)`} 
+                  width={isHovered ? 28 : 20} 
+                  height={isHovered ? 28 : 20} 
+                  className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm" 
+                />
               ) : d.isSeasonPR ? (
-                <svg x={`calc(${xPercent}% - ${isHovered ? 10 : 7}px)`} y={`calc(${yPercent}% - ${isHovered ? 10 : 7}px)`} width={isHovered ? 20 : 14} height={isHovered ? 20 : 14} viewBox="0 0 24 24" fill="#10b981" stroke="#047857" strokeWidth="3" className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm">
-                   <polygon points="12 2 22 12 12 22 2 12" />
-                </svg>
+                <SeasonPRIcon 
+                  x={`calc(${xPercent}% - ${isHovered ? 10 : 7}px)`} 
+                  y={`calc(${yPercent}% - ${isHovered ? 10 : 7}px)`} 
+                  width={isHovered ? 20 : 14} 
+                  height={isHovered ? 20 : 14} 
+                  className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm" 
+                />
               ) : (
-                <circle cx={`${xPercent}%`} cy={`${yPercent}%`} r={isHovered ? "6" : "4"} fill={isHovered ? "#0284c7" : "#fff"} stroke="#0ea5e9" strokeWidth="3" className="transition-all duration-200 cursor-pointer" />
+                <DataPointCircle 
+                  cx={`${xPercent}%`} 
+                  cy={`${yPercent}%`} 
+                  r={isHovered ? "6" : "4"} 
+                  fill={isHovered ? "#0284c7" : "#fff"} 
+                  className="transition-all duration-200 cursor-pointer" 
+                />
               )}
             </g>
           );
@@ -99,16 +117,42 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
       {/* Custom Tooltip */}
       {hoveredIndex !== null && (
         <div 
-          className="absolute z-20 w-max bg-slate-900 text-white text-sm rounded-lg py-2 px-3 shadow-xl transform -translate-x-1/2 -translate-y-full pointer-events-none transition-all"
+          className="absolute z-20 w-max bg-background text-foreground text-sm rounded-lg py-2 px-3 shadow-xl transform -translate-x-1/2 -translate-y-full pointer-events-none transition-all"
           style={{ left: `${getX(hoveredIndex)}%`, top: `calc(${getY(data[hoveredIndex].paceSeconds)}% - 12px)` }}
         >
-          <div className="font-bold text-sky-400 mb-1">{data[hoveredIndex].DisplayTime}</div>
-          {data[hoveredIndex].isLifetimePR && <div className="text-amber-400 text-xs font-bold mb-1">⭐ Lifetime PR</div>}
-          {data[hoveredIndex].isSeasonPR && !data[hoveredIndex].isLifetimePR && <div className="text-emerald-400 text-xs font-bold mb-1">♦️ Season PR</div>}
-          <div className="text-slate-300 text-xs whitespace-nowrap">{data[hoveredIndex].MeetName}</div>
-          <div className="text-slate-400 text-xs mt-1 border-t border-slate-700 pt-1">
+          {/* Display Time */}
+          <div className="font-bold text-light-blue mb-1">
+            {data[hoveredIndex].DisplayTime}
+          </div>
+          
+          {/* Lifetime PR */}
+          {data[hoveredIndex].isLifetimePR && (
+            <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold mb-1">
+              {/* Pass dynamic width/height to make it fit text size */}
+              <LifetimePRIcon width="12" height="12" className="shrink-0" />
+              <span>Lifetime PR</span>
+            </div>
+          )}
+
+          {/* Season PR */}
+          {data[hoveredIndex].isSeasonPR && !data[hoveredIndex].isLifetimePR && (
+            <div className="flex items-center gap-1.5 text-green-500 text-xs font-bold mb-1">
+              <SeasonPRIcon width="12" height="12" className="shrink-0" />
+              <span>Season PR</span>
+            </div>
+          )}
+
+          {/* Meet Info */}
+          <div className="text-xs whitespace-nowrap">
+            {data[hoveredIndex].MeetName}
+          </div>
+          
+          {/* Pace Info */}
+          <div className="text-xs mt-1 border-t border-border pt-1">
             Pace: {data[hoveredIndex].pace}/mi
           </div>
+          
+          {/* Tooltip Arrow */}
           <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
         </div>
       )}
