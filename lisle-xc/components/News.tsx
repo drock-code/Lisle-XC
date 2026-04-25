@@ -4,7 +4,7 @@ import Button from '@/components/Button';
 export default function News() {
   return (
     <div className="lg:col-span-2 space-y-8">
-      <section className="bg-background backdrop-blur-md rounded-2xl overflow-hidden border-border border-x border-t">
+      <section className="bg-background backdrop-blur-md rounded-2xl overflow-hidden border-border border">
         <div className="p-8 md:p-12">
           <div className="flex items-center space-x-2 text-light-blue font-bold tracking-widest uppercase text-xs mb-4">
             <span className="w-8 h-0.5 bg-light-blue"></span>

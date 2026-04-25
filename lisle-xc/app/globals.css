@@ -26,6 +26,7 @@
   :root {
     --background: #0f172a; /* Deep navy for dark mode background */
     --foreground: #f8fafc; /* Off-white for high contrast text */
+    --color-border: #f8fafc; /* Same as Lisle Blue */
   }
 }
 

@@ -2,12 +2,25 @@
 
 import { useState } from 'react';
 import { Search, Menu, X } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation'; 
 import Link from 'next/link';
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(''); 
+  
   const pathname = usePathname(); 
+  const router = useRouter();
+
+  // Handle the search submission
+  const handleSearch = (e: React.SyntheticEvent) => {
+    e.preventDefault(); // Prevent the page from reloading
+    
+    if (searchQuery.trim()) {
+      // Redirect to the search page, encoding the string to handle spaces/special characters
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   const navLinks = [
     { name: 'Home', href: '/' },
@@ -40,7 +53,6 @@ export const Navbar = () => {
           {/* Desktop Nav */}
           <div className="hidden lg:flex space-x-1 items-center">
             {navLinks.map((link, index) => {
-              // 4. Check if the current URL matches the link's destination
               const isActive = pathname === link.href;
 
               return (
@@ -59,16 +71,24 @@ export const Navbar = () => {
             })}
             
             {/* Desktop Search */}
-            <div className="ml-4 flex items-center bg-black/20 rounded-full pl-4 pr-1 py-1 border border-white/10 focus-within:border-light-blue transition-all">
+            <form 
+              onSubmit={handleSearch}
+              className="ml-4 flex items-center bg-black/20 rounded-full pl-4 pr-1 py-1 border border-white/10 focus-within:border-light-blue transition-all"
+            >
               <input 
                 type="text" 
-                placeholder="Search..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search runners..." 
                 className="bg-transparent text-white text-xs focus:outline-none w-24 xl:w-40 font-body placeholder-gray-400"
               />
-              <button className="bg-light-blue rounded-full p-1.5 ml-2 hover:brightness-110 transition-all">
+              <button 
+                type="submit"
+                className="bg-light-blue rounded-full p-1.5 ml-2 hover:brightness-110 transition-all cursor-pointer"
+              >
                 <Search size={14} className="text-lisle-blue" />
               </button>
-            </div>
+            </form>
           </div>
 
           {/* Mobile Menu Button */}
@@ -94,7 +114,7 @@ export const Navbar = () => {
                 <Link
                   key={index}
                   href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)} // Close menu when clicked!
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className={`block px-4 py-3 rounded-md text-base font-medium ${
                     isActive ? 'text-light-blue bg-white/10' : 'text-light-gray hover:text-white hover:bg-white/10'
                   }`}

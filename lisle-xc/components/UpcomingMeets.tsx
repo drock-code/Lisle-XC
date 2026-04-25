@@ -10,7 +10,7 @@ export default async function UpcomingMeets() {
   const upcomingMeets = await getUpcomingMeets(2);
 
   return (
-    <section className="bg-background backdrop-blur-md rounded-2xl p-8 border-border border-x border-b">
+    <section className="bg-background backdrop-blur-md rounded-2xl p-8 border border-border">
       <div className="flex items-center justify-between mb-8">
         <h3 className="font-heading font-bold text-xl text-foreground uppercase tracking-wider">
           Upcoming Meets

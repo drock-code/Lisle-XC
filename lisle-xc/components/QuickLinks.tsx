@@ -6,7 +6,7 @@ export default async function QuickLinks() {
   const randomFaq = await getRandomFAQ();
 
   return (
-    <section className="bg-lisle-blue/90 backdrop-blur-md rounded-2xl p-8 text-white border border-white/10">
+    <section className="bg-lisle-blue/90 backdrop-blur-md rounded-2xl p-8 text-white border border-border">
       <h3 className="font-heading font-bold text-xl uppercase tracking-wider mb-6">
         Resources
       </h3>
