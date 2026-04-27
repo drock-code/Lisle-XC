@@ -58,7 +58,7 @@ export interface SearchFilters {
   athleteId?: string;
   gender?: string;
   grade?: string;
-  meetId?: string;
+  routeId?: string;
   distance?: string;
   minTime?: string;
   maxTime?: string;
@@ -104,10 +104,10 @@ export interface SearchFilters {
 /*************************** RESULTS PAGE QUERIES *********************************/
 export async function getResultsFilterOptions() {
   const [runners] = await pool.query<RowDataPacket[]>('SELECT `Key`, `Name` FROM Runner ORDER BY `Name` ASC');
-  const [meets] = await pool.query<RowDataPacket[]>('SELECT `MeetKey`, `Name`, `Season` FROM Meet ORDER BY `Date` DESC');
+  const [routes] = await pool.query<RowDataPacket[]>('SELECT `RouteKey`, `Name` FROM Route ORDER BY `Name` ASC'); 
   const [distances] = await pool.query<RowDataPacket[]>('SELECT DISTINCT `Distance`, `DistanceUnit` FROM Route ORDER BY `Distance` ASC');
   
-  return { runners, meets, distances };
+  return { runners, routes, distances };
 }
 
 export async function getLatestSeason() {
@@ -142,7 +142,7 @@ export async function searchMeetResults(filters: SearchFilters) {
   if (filters.athleteId) { query += ` AND rr.RunnerID = ?`; values.push(filters.athleteId); }
   if (filters.gender) { query += ` AND r.Gender = ?`; values.push(filters.gender); }
   if (filters.grade) { query += ` AND rr.Grade = ?`; values.push(filters.grade); }
-  if (filters.meetId) { query += ` AND m.MeetKey = ?`; values.push(filters.meetId); }
+  if (filters.routeId) { query += ` AND mr.RouteKey = ?`; values.push(filters.routeId); }
   if (filters.distance) { 
     // Assuming distance is passed as "3.0-Miles"
     const [dist, unit] = filters.distance.split('-');
