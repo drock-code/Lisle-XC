@@ -1,5 +1,13 @@
 import { pool } from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
+import {processRunnerResults} from '@/lib/runner-utils';
+
+export interface FAQRow extends RowDataPacket {
+  Key: number;
+  Order: number;
+  Title: string;
+  Content: string;
+}
 
 export interface MeetResult {
   ID: number;
@@ -7,22 +15,12 @@ export interface MeetResult {
   File: string;
 }
 
-export interface ScheduleRow extends RowDataPacket {
-  ID: number;
-  Meet: string;
-  Date: Date;
-  Time: string | null;
-  Location: string | null;
-  Level: string | null;
-  Info: string | null;
-  Results: MeetResult[] | null;
-}
-
-export interface FAQRow extends RowDataPacket {
+export interface NoteRow extends RowDataPacket {
   Key: number;
-  Order: number;
+  Date: Date;
   Title: string;
-  Content: string;
+  Note: string;
+  Image: string | null;
 }
 
 export interface RunnerProfileRow extends RowDataPacket {
@@ -43,7 +41,168 @@ export interface RunnerResultRow extends RowDataPacket {
   Grade: number;
 }
 
-/* SCHEDULE QUERIES */
+export interface ScheduleRow extends RowDataPacket {
+  ID: number;
+  Meet: string;
+  Date: Date;
+  Time: string | null;
+  Location: string | null;
+  Level: string | null;
+  Info: string | null;
+  Results: MeetResult[] | null;
+}
+
+export interface SearchFilters {
+  startDate?: string;
+  endDate?: string;
+  athleteId?: string;
+  gender?: string;
+  grade?: string;
+  meetId?: string;
+  distance?: string;
+  minTime?: string;
+  maxTime?: string;
+  level?: 'HS' | 'JH';
+}
+
+/*************************** FAQ QUERIES *********************************/
+  export async function getFAQs() {
+    const [rows] = await pool.query<FAQRow[]>(
+      'SELECT `Key`, `Order`, `Title`, `Content` FROM FAQ ORDER BY `Order` ASC'
+    );
+    return rows;
+  }
+
+  export async function getRandomFAQ() {
+    const [rows] = await pool.query<FAQRow[]>(
+      'SELECT `Key`, `Title`, `Content` FROM FAQ ORDER BY RAND() LIMIT 1'
+    );
+    return rows.length > 0 ? rows[0] : null;
+  }
+/*************************** END OF FAQ QUERIES *********************************/
+
+/*************************** NEWS QUERIES *********************************/
+  // Get the total number of news posts (used for calculating total pages)
+  export async function getTotalNewsCount() {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as total FROM Note'
+    );
+    return rows[0].total as number;
+  }
+
+  // Fetch a specific page of news posts
+  export async function getNewsPosts(limit: number, offset: number) {
+    const [rows] = await pool.query<NoteRow[]>(
+      'SELECT `Key`, `Date`, `Title`, `Note`, `Image` FROM Note ORDER BY `Date` DESC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+    
+    return rows;
+  }
+/*************************** END OF NEWS QUERIES *********************************/
+
+/*************************** RESULTS PAGE QUERIES *********************************/
+export async function getResultsFilterOptions() {
+  const [runners] = await pool.query<RowDataPacket[]>('SELECT `Key`, `Name` FROM Runner ORDER BY `Name` ASC');
+  const [meets] = await pool.query<RowDataPacket[]>('SELECT `MeetKey`, `Name`, `Season` FROM Meet ORDER BY `Date` DESC');
+  const [distances] = await pool.query<RowDataPacket[]>('SELECT DISTINCT `Distance`, `DistanceUnit` FROM Route ORDER BY `Distance` ASC');
+  
+  return { runners, meets, distances };
+}
+
+export async function getLatestSeason() {
+  const [rows] = await pool.query<RowDataPacket[]>('SELECT MAX(Season) as Latest FROM Meet');
+  return rows[0].Latest as number;
+}
+
+export async function searchMeetResults(filters: SearchFilters) {
+  let query = `
+    SELECT 
+      rr.*,
+      m.Name AS MeetName, m.Date, m.Season,
+      rt.Distance, rt.DistanceUnit,
+      r.AvatarURL, r.Gender
+    FROM RunnerResult rr
+    JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+    JOIN Meet m ON mr.MeetID = m.MeetKey
+    JOIN Route rt ON mr.RouteKey = rt.RouteKey
+    JOIN Runner r ON rr.RunnerID = r.Key
+    WHERE rr.Time != '00:00:00'
+  `;
+  
+  const values: (string | number)[] = [];
+
+  // Dynamically build the WHERE clause based on provided filters
+  if (filters.level) {
+    query += ` AND rr.JH = ?`;
+    values.push(filters.level === 'JH' ? 1 : 0);
+  }
+  if (filters.startDate) { query += ` AND m.Date >= ?`; values.push(filters.startDate); }
+  if (filters.endDate) { query += ` AND m.Date <= ?`; values.push(filters.endDate); }
+  if (filters.athleteId) { query += ` AND rr.RunnerID = ?`; values.push(filters.athleteId); }
+  if (filters.gender) { query += ` AND r.Gender = ?`; values.push(filters.gender); }
+  if (filters.grade) { query += ` AND rr.Grade = ?`; values.push(filters.grade); }
+  if (filters.meetId) { query += ` AND m.MeetKey = ?`; values.push(filters.meetId); }
+  if (filters.distance) { 
+    // Assuming distance is passed as "3.0-Miles"
+    const [dist, unit] = filters.distance.split('-');
+    query += ` AND rt.Distance = ? AND rt.DistanceUnit = ?`; 
+    values.push(dist, unit); 
+  }
+  if (filters.minTime) { query += ` AND rr.Time >= ?`; values.push(filters.minTime); }
+  if (filters.maxTime) { query += ` AND rr.Time <= ?`; values.push(filters.maxTime); }
+
+  query += ` ORDER BY m.Date DESC, rr.Time ASC`;
+
+  const [rows] = await pool.query<RowDataPacket[]>(query, values);
+  
+  // We MUST process the results to calculate PRs before sending to the frontend
+  // Note: For 100% accurate lifetime PRs across a filtered subset, you may need a more complex subquery, 
+  // but this runs your provided utility on the fetched data!
+  return processRunnerResults(rows as RunnerResultRow[]);
+}
+/*************************** END OF RESULTS PAGE QUERIES *********************************/
+
+/*************************** RUNNER PROFILE QUERIES *********************************/
+  export async function getRunnerProfile(runnerId: number | string) {
+    // Fetch the basic runner information
+    const [runnerRows] = await pool.query<RunnerProfileRow[]>(
+      'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Key` = ?',
+      [runnerId]
+    );
+
+    if (runnerRows.length === 0) {
+      return null;
+    }
+
+    // Fetch all of their historical race results
+    const [resultRows] = await pool.query<RunnerResultRow[]>(
+      `SELECT 
+          m.Name AS MeetName,
+          m.Date,
+          m.Season,
+          rt.Distance,
+          rt.DistanceUnit,
+          rr.Time,
+          rr.Grade,
+          mr.JH
+      FROM RunnerResult rr
+      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      JOIN Meet m ON mr.MeetID = m.MeetKey
+      JOIN Route rt ON mr.RouteKey = rt.RouteKey
+      WHERE rr.RunnerID = ? AND rr.Time != '00:00:00'
+      ORDER BY m.Date ASC`,
+      [runnerId]
+    );
+
+    return {
+      runner: runnerRows[0],
+      results: resultRows
+    };
+  }
+/*************************** END OF RUNNER PROFILE QUERIES *********************************/
+
+/*************************** SCHEDULE QUERIES *********************************/
   // Automatically find all years that have meets in the database
   export async function getAvailableYears() {
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -103,64 +262,9 @@ export interface RunnerResultRow extends RowDataPacket {
       Results: typeof row.Results === 'string' ? JSON.parse(row.Results) : row.Results
     }));
   }
-/* END OF SCHEDULE QUERIES */
+/*************************** END OF SCHEDULE QUERIES *********************************/
 
-/* FAQ QUERIES */
-  export async function getFAQs() {
-    const [rows] = await pool.query<FAQRow[]>(
-      'SELECT `Key`, `Order`, `Title`, `Content` FROM FAQ ORDER BY `Order` ASC'
-    );
-    return rows;
-  }
-
-  export async function getRandomFAQ() {
-    const [rows] = await pool.query<FAQRow[]>(
-      'SELECT `Key`, `Title`, `Content` FROM FAQ ORDER BY RAND() LIMIT 1'
-    );
-    return rows.length > 0 ? rows[0] : null;
-  }
-/* END OF FAQ QUERIES */
-
-/* RUNNER PROFILE QUERIES */
-  export async function getRunnerProfile(runnerId: number | string) {
-    // Fetch the basic runner information
-    const [runnerRows] = await pool.query<RunnerProfileRow[]>(
-      'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Key` = ?',
-      [runnerId]
-    );
-
-    if (runnerRows.length === 0) {
-      return null;
-    }
-
-    // Fetch all of their historical race results
-    const [resultRows] = await pool.query<RunnerResultRow[]>(
-      `SELECT 
-          m.Name AS MeetName,
-          m.Date,
-          m.Season,
-          rt.Distance,
-          rt.DistanceUnit,
-          rr.Time,
-          rr.Grade,
-          mr.JH
-      FROM RunnerResult rr
-      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-      JOIN Meet m ON mr.MeetID = m.MeetKey
-      JOIN Route rt ON mr.RouteKey = rt.RouteKey
-      WHERE rr.RunnerID = ? AND rr.Time != '00:00:00'
-      ORDER BY m.Date ASC`,
-      [runnerId]
-    );
-
-    return {
-      runner: runnerRows[0],
-      results: resultRows
-    };
-  }
-/* END OF RUNNER PROFILE QUERIES */
-
-/* SEARCH QUERIES */
+/*************************** SEARCH QUERIES *********************************/
   export async function searchRunners(searchTerm: string) {
     const searchPattern = `%${searchTerm}%`;
 
@@ -171,4 +275,4 @@ export interface RunnerResultRow extends RowDataPacket {
 
     return rows;
   }
-/* END OF SEARCH QUERIES */
+/*************************** END OF SEARCH QUERIES *********************************/
