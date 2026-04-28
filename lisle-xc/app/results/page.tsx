@@ -214,10 +214,13 @@ const handleClearFilters = () => {
     currentPage * itemsPerPage
   );
 
-  // Group data for Meet View
+// 1. Group by a unique string that includes the Date
   const groupedByMeet = results.reduce((acc, result) => {
-    if (!acc[result.MeetName]) acc[result.MeetName] = [];
-    acc[result.MeetName].push(result);
+    // e.g., "Lisle Invite|2024-09-15"
+    const uniqueMeetKey = `${result.MeetName}|${result.Date}`; 
+    
+    if (!acc[uniqueMeetKey]) acc[uniqueMeetKey] = [];
+    acc[uniqueMeetKey].push(result);
     return acc;
   }, {} as Record<string, ResultItem[]>);
 
@@ -398,60 +401,65 @@ const handleClearFilters = () => {
   </div>
 )}
           </div>
-        ) : activeView === 'Meet' ? (
+       ) : activeView === 'Meet' ? (
           /* --- MEET VIEW --- */
-          Object.entries(groupedByMeet).map(([meetName, meetResults]) => (
-            <div key={meetName} className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm">
-              <div className="bg-light-blue-gray p-4 border-b border-border">
-                <h3 className="font-heading font-bold text-xl text-lisle-blue">{meetName}</h3>
-                <p className="text-sm text-lisle-blue">{new Date(meetResults[0].Date).toLocaleDateString()} • {meetResults[0].FormattedDistance}</p>
-              </div>
-              <div className="p-0 overflow-x-auto">
-                <table className="w-full text-left text-sm min-w-[500px]">
-                  <thead className="bg-background text-light-gray font-bold uppercase border-b border-light-blue-gray">
-                    <tr>
-                      <th className="px-4 py-3">Runner</th>
-                      <th className="px-4 py-3">Grade</th>
-                      <th className="px-4 py-3">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {meetResults.map((r, idx) => (
-                      <tr key={idx} className="border-b border-light-blue-gray/30 hover:bg-light-blue-gray/10 transition-colors">
-                        <td className="px-4 py-3 flex items-center space-x-3">
-                          <Link href={`/runners/${r.RunnerID}-${generateSlug(r.Runner)}`} className="flex items-center space-x-3 hover:text-light-blue transition-colors text-foreground font-bold">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-light-blue-gray shrink-0 border border-border">
-                              {r.AvatarURL ? (
-                                <img src={r.AvatarURL} alt={r.Runner} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-lisle-blue font-bold text-xs">{r.Runner.charAt(0)}</div>
-                              )}
-                            </div>
-                            <span>{r.Runner}</span>
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-foreground">{r.Grade}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-  <div className="flex items-center space-x-2">
-    <span className="font-bold text-lisle-blue">
-      {formatRaceTime(r.Time)}
-    </span>
-    {/* PR Icons */}
-    {r.isLifetimePR ? (
-      <LifetimePRIcon className="shrink-0" />
-    ) : r.isSeasonPR ? (
-      <SeasonPRIcon className="shrink-0" />
-    ) : null}
-  </div>
-</td>
-                        
+          Object.entries(groupedByMeet).map(([uniqueMeetKey, meetResults]) => {
+            // Extract the actual display name from the first result in the group
+            const displayMeetName = meetResults[0].MeetName;
+            
+            return (
+              <div key={uniqueMeetKey} className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-light-blue-gray p-4 border-b border-border">
+                  <h3 className="font-heading font-bold text-xl text-lisle-blue">{displayMeetName}</h3>
+                  <p className="text-sm text-lisle-blue">{new Date(meetResults[0].Date).toLocaleDateString()} • {meetResults[0].FormattedDistance}</p>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                  <table className="w-full text-left text-sm min-w-[500px]">
+                    <thead className="bg-background text-light-gray font-bold uppercase border-b border-light-blue-gray">
+                      <tr>
+                        <th className="px-4 py-3">Runner</th>
+                        <th className="px-4 py-3">Grade</th>
+                        <th className="px-4 py-3">Time</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {meetResults.map((r, idx) => (
+                        <tr key={idx} className="border-b border-light-blue-gray/30 hover:bg-light-blue-gray/10 transition-colors">
+                          <td className="px-4 py-3 flex items-center space-x-3">
+                            <Link href={`/runners/${r.RunnerID}-${generateSlug(r.Runner)}`} className="flex items-center space-x-3 hover:text-light-blue transition-colors text-foreground font-bold">
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-light-blue-gray shrink-0 border border-border">
+                                {r.AvatarURL ? (
+                                  <img src={r.AvatarURL} alt={r.Runner} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-lisle-blue font-bold text-xs">{r.Runner.charAt(0)}</div>
+                                )}
+                              </div>
+                              <span>{r.Runner}</span>
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-foreground">{r.Grade}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold text-lisle-blue">
+                                {formatRaceTime(r.Time)}
+                              </span>
+                              {/* PR Icons */}
+                              {r.isLifetimePR ? (
+                                <LifetimePRIcon className="shrink-0" />
+                              ) : r.isSeasonPR ? (
+                                <SeasonPRIcon className="shrink-0" />
+                              ) : null}
+                            </div>
+                          </td>
+                          
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           
           /* --- RUNNER VIEW --- */
