@@ -25,7 +25,7 @@ export default function Button({
 
   // Apply colors strictly based on whether the button is active
   const colorClasses = isActive 
-    ? "bg-white text-lisle-blue scale-105 shadow-md" 
+    ? "bg-white text-lisle-blue scale-105 shadow-md hover:bg-blue-50 hover:shadow-lg" 
     : "bg-lisle-blue text-white hover:bg-light-blue shadow-lg shadow-lisle-blue/20";
 
   return (

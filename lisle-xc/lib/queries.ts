@@ -1,6 +1,5 @@
 import { pool } from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
-import {processRunnerResults} from '@/lib/runner-utils';
 
 export interface FAQRow extends RowDataPacket {
   Key: number;
@@ -58,11 +57,12 @@ export interface SearchFilters {
   athleteId?: string;
   gender?: string;
   grade?: string;
-  meetId?: string;
+  routeId?: string;
   distance?: string;
   minTime?: string;
   maxTime?: string;
   level?: 'HS' | 'JH';
+  prStatus?: 'Lifetime' | 'Season' | '';
 }
 
 /*************************** FAQ QUERIES *********************************/
@@ -102,65 +102,121 @@ export interface SearchFilters {
 /*************************** END OF NEWS QUERIES *********************************/
 
 /*************************** RESULTS PAGE QUERIES *********************************/
-export async function getResultsFilterOptions() {
-  const [runners] = await pool.query<RowDataPacket[]>('SELECT `Key`, `Name` FROM Runner ORDER BY `Name` ASC');
-  const [meets] = await pool.query<RowDataPacket[]>('SELECT `MeetKey`, `Name`, `Season` FROM Meet ORDER BY `Date` DESC');
-  const [distances] = await pool.query<RowDataPacket[]>('SELECT DISTINCT `Distance`, `DistanceUnit` FROM Route ORDER BY `Distance` ASC');
-  
-  return { runners, meets, distances };
-}
-
-export async function getLatestSeason() {
-  const [rows] = await pool.query<RowDataPacket[]>('SELECT MAX(Season) as Latest FROM Meet');
-  return rows[0].Latest as number;
-}
-
-export async function searchMeetResults(filters: SearchFilters) {
-  let query = `
-    SELECT 
-      rr.*,
-      m.Name AS MeetName, m.Date, m.Season,
-      rt.Distance, rt.DistanceUnit,
-      r.AvatarURL, r.Gender
-    FROM RunnerResult rr
-    JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-    JOIN Meet m ON mr.MeetID = m.MeetKey
-    JOIN Route rt ON mr.RouteKey = rt.RouteKey
-    JOIN Runner r ON rr.RunnerID = r.Key
-    WHERE rr.Time != '00:00:00'
-  `;
-  
-  const values: (string | number)[] = [];
-
-  // Dynamically build the WHERE clause based on provided filters
-  if (filters.level) {
-    query += ` AND rr.JH = ?`;
-    values.push(filters.level === 'JH' ? 1 : 0);
+  export async function getResultsFilterOptions() {
+    const [runners] = await pool.query<RowDataPacket[]>('SELECT `Key`, `Name` FROM Runner ORDER BY `Name` ASC');
+    const [routes] = await pool.query<RowDataPacket[]>('SELECT `RouteKey`, `Name` FROM Route ORDER BY `Name` ASC'); 
+    const [distances] = await pool.query<RowDataPacket[]>('SELECT DISTINCT `Distance`, `DistanceUnit` FROM Route ORDER BY `Distance` ASC');
+    
+    return { runners, routes, distances };
   }
-  if (filters.startDate) { query += ` AND m.Date >= ?`; values.push(filters.startDate); }
-  if (filters.endDate) { query += ` AND m.Date <= ?`; values.push(filters.endDate); }
-  if (filters.athleteId) { query += ` AND rr.RunnerID = ?`; values.push(filters.athleteId); }
-  if (filters.gender) { query += ` AND r.Gender = ?`; values.push(filters.gender); }
-  if (filters.grade) { query += ` AND rr.Grade = ?`; values.push(filters.grade); }
-  if (filters.meetId) { query += ` AND m.MeetKey = ?`; values.push(filters.meetId); }
-  if (filters.distance) { 
-    // Assuming distance is passed as "3.0-Miles"
-    const [dist, unit] = filters.distance.split('-');
-    query += ` AND rt.Distance = ? AND rt.DistanceUnit = ?`; 
-    values.push(dist, unit); 
+
+  export async function getLatestSeason() {
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT MAX(Season) as Latest FROM Meet');
+    return rows[0].Latest as number;
   }
-  if (filters.minTime) { query += ` AND rr.Time >= ?`; values.push(filters.minTime); }
-  if (filters.maxTime) { query += ` AND rr.Time <= ?`; values.push(filters.maxTime); }
 
-  query += ` ORDER BY m.Date DESC, rr.Time ASC`;
-
-  const [rows] = await pool.query<RowDataPacket[]>(query, values);
+  export async function searchMeetResults(filters: SearchFilters) {
+    const formatForDb = (timeStr: string | undefined | null) => {
+    if (!timeStr || timeStr.trim() === '') return null;
+    
+    // If user typed "18:00", convert to "00:18:00"
+    const parts = timeStr.split(':');
+    if (parts.length === 2) {
+      return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+    }
+    
+    // If it's already "00:18:00" or similar, just return it
+    return timeStr;
+  };
   
-  // We MUST process the results to calculate PRs before sending to the frontend
-  // Note: For 100% accurate lifetime PRs across a filtered subset, you may need a more complex subquery, 
-  // but this runs your provided utility on the fetched data!
-  return processRunnerResults(rows as RunnerResultRow[]);
-}
+    let query = `
+      SELECT 
+        rr.*,
+        m.Name AS MeetName, m.Date, m.Season,
+        rt.Distance, rt.DistanceUnit,
+        r.AvatarURL, r.Gender,
+        
+        /* Subquery to check if this is the fastest time EVER for this runner at this distance */
+        (rr.Time = (
+          SELECT MIN(rr2.Time)
+          FROM RunnerResult rr2
+          JOIN MeetRace mr2 ON rr2.RaceID = mr2.RaceKey
+          JOIN Route rt2 ON mr2.RouteKey = rt2.RouteKey
+          WHERE rr2.RunnerID = rr.RunnerID 
+          AND rt2.Distance = rt.Distance 
+          AND rt2.DistanceUnit = rt.DistanceUnit
+          AND rr2.Time != '00:00:00'
+        )) AS isLifetimePR,
+
+        /* Subquery to check if this is the fastest time in this SEASON for this runner at this distance */
+        (rr.Time = (
+          SELECT MIN(rr3.Time)
+          FROM RunnerResult rr3
+          JOIN MeetRace mr3 ON rr3.RaceID = mr3.RaceKey
+          JOIN Meet m3 ON mr3.MeetID = m3.MeetKey
+          JOIN Route rt3 ON mr3.RouteKey = rt3.RouteKey
+          WHERE rr3.RunnerID = rr.RunnerID 
+          AND m3.Season = m.Season
+          AND rt3.Distance = rt.Distance 
+          AND rt3.DistanceUnit = rt.DistanceUnit
+          AND rr3.Time != '00:00:00'
+        )) AS isSeasonPR
+
+      FROM RunnerResult rr
+      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      JOIN Meet m ON mr.MeetID = m.MeetKey
+      JOIN Route rt ON mr.RouteKey = rt.RouteKey
+      JOIN Runner r ON rr.RunnerID = r.Key
+      WHERE rr.Time != '00:00:00'
+    `;
+    
+    const values: (string | number | null)[] = [];
+
+    // Dynamically build the WHERE clause based on provided filters
+    if (filters.level) {
+      query += ` AND rr.JH = ?`;
+      values.push(filters.level === 'JH' ? 1 : 0);
+    }
+    if (filters.startDate) { query += ` AND m.Date >= ?`; values.push(filters.startDate); }
+    if (filters.endDate) { query += ` AND m.Date <= ?`; values.push(filters.endDate); }
+    if (filters.athleteId) { query += ` AND rr.RunnerID = ?`; values.push(filters.athleteId); }
+    if (filters.gender) { query += ` AND r.Gender = ?`; values.push(filters.gender); }
+    if (filters.grade) { query += ` AND rr.Grade = ?`; values.push(filters.grade); }
+    if (filters.routeId) { query += ` AND mr.RouteKey = ?`; values.push(filters.routeId); }
+    if (filters.distance) { 
+      // Assuming distance is passed as "3.0-Miles"
+      const [dist, unit] = filters.distance.split('-');
+      query += ` AND rt.Distance = ? AND rt.DistanceUnit = ?`; 
+      values.push(dist, unit); 
+    }
+    if (filters.minTime) { 
+      // Min Time = "Slowest" allowed. (e.g., Show me everything SLOWER than 18:00)
+      query += ` AND rr.Time >= ?`; 
+      values.push(formatForDb(filters.minTime)); 
+    }
+    if (filters.maxTime) { 
+      // Max Time = "Fastest" allowed. (e.g., Show me everything FASTER than 20:00)
+      query += ` AND rr.Time <= ?`; 
+      values.push(formatForDb(filters.maxTime)); 
+    }
+
+    if (filters.prStatus === 'Lifetime') {
+      query += ` HAVING isLifetimePR = 1`;
+    } else if (filters.prStatus === 'Season') {
+      query += ` HAVING isSeasonPR = 1`;
+    }
+
+    query += ` ORDER BY m.Date DESC, r.Name ASC`;
+
+    const [rows] = await pool.query<RowDataPacket[]>(query, values);
+
+    return rows.map(row => ({
+      ...row,
+      isLifetimePR: !!row.isLifetimePR, // Convert 1/0 to boolean
+      isSeasonPR: !!row.isSeasonPR,
+      FormattedDistance: `${parseFloat(row.Distance)} ${row.DistanceUnit}`
+    }));
+  }
 /*************************** END OF RESULTS PAGE QUERIES *********************************/
 
 /*************************** RUNNER PROFILE QUERIES *********************************/

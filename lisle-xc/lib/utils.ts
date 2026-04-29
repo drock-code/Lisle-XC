@@ -33,3 +33,19 @@ export const getDistanceInMiles = (distance: number, unit: string) => {
   // If it's already "Miles" or "mi", just return the number
   return distance;
 };
+
+/**
+ * Formats a database time string (HH:MM:SS.ms) for display.
+ * Removes leading hour zeros and leading minute zeros.
+ * Example: "00:18:45.0" -> "18:45.0"
+ * Example: "00:08:12" -> "8:12"
+ */
+export const formatRaceTime = (timeStr: string | null | undefined): string => {
+  if (!timeStr) return '';
+  
+  // 1. Remove leading "00:" for hours
+  // 2. Remove a single leading "0" if it's the first character of the remaining string
+  return timeStr
+    .replace(/^00:/, '')
+    .replace(/^0/, '');
+};

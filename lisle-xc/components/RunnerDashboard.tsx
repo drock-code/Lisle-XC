@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { User, Calendar, Map, Activity, ChevronDown } from 'lucide-react';
+import { Calendar, Map, Activity, ChevronDown } from 'lucide-react';
 
 import { PerformanceChart } from '@/components/PerformanceChart';
 import { LifetimePRIcon, SeasonPRIcon } from '@/components/Icons';
+import RunnerAvatar from '@/components/RunnerAvatar';
 
 import type { RunnerProfileRow } from '@/lib/queries';
 import { timeToSeconds, secondsToTime, getDistanceInMiles } from '@/lib/utils';
@@ -68,18 +69,16 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
     return Array.from(new Set(filteredResults.map(r => r.Season))).sort((a, b) => b - a);
   }, [filteredResults]);
 
-  // Ensure selected season is valid if tabs change
-  useMemo(() => {
-    if (selectedSeason !== 'Career' && !availableSeasons.includes(selectedSeason)) {
-      setSelectedSeason('Career');
-    }
-  }, [activeTab, availableSeasons, selectedSeason]);
+  // Calculate the valid season on the fly (replaces the useEffect!)
+  const displaySeason = (selectedSeason !== 'Career' && !availableSeasons.includes(selectedSeason)) 
+    ? 'Career' 
+    : selectedSeason;
 
   // Data specifically for the chart based on season filter
   const chartData = useMemo(() => {
-    if (selectedSeason === 'Career') return filteredResults;
-    return filteredResults.filter(r => r.Season === selectedSeason);
-  }, [filteredResults, selectedSeason]);
+    if (displaySeason === 'Career') return filteredResults;
+    return filteredResults.filter(r => r.Season === displaySeason);
+  }, [filteredResults, displaySeason]);
 
   // Extract Lifetime PRs for the top cards based on the filtered tab
   const lifetimePRs = useMemo(() => {
@@ -95,13 +94,11 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
       
       {/* Header Section */}
       <div className="bg-background rounded-4xl p-6 md:p-10 shadow-sm border border-border flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-light-blue-gray border-4 border-foreground shadow-lg flex items-center justify-center shrink-0 text-foreground overflow-hidden">
-           {runner.AvatarURL ? (
-             <img src={runner.AvatarURL} alt={runner.Name} className="w-full h-full object-cover" />
-           ) : (
-             <User size={80} strokeWidth={1.5} className="mt-6" />
-           )}
-        </div>
+          <RunnerAvatar 
+          src={runner.AvatarURL} 
+          name={runner.Name} 
+          size="lg" 
+        />
         
         <div className="text-center md:text-left flex-1 w-full">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -182,7 +179,7 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
           
           <div className="relative w-full md:w-auto">
             <select 
-              value={selectedSeason} 
+              value={displaySeason} 
               onChange={(e) => setSelectedSeason(e.target.value === 'Career' ? 'Career' : Number(e.target.value))}
               className="w-full md:w-48 appearance-none bg-background border border-border text-foreground font-medium py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:light-blue-gray focus:border-transparent cursor-pointer"
             >
