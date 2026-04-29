@@ -62,6 +62,7 @@ export interface SearchFilters {
   minTime?: string;
   maxTime?: string;
   level?: 'HS' | 'JH';
+  prStatus?: 'Lifetime' | 'Season' | '';
 }
 
 /*************************** FAQ QUERIES *********************************/
@@ -199,10 +200,16 @@ export interface SearchFilters {
       values.push(formatForDb(filters.maxTime)); 
     }
 
+    if (filters.prStatus === 'Lifetime') {
+      query += ` HAVING isLifetimePR = 1`;
+    } else if (filters.prStatus === 'Season') {
+      query += ` HAVING isSeasonPR = 1`;
+    }
+
     query += ` ORDER BY m.Date DESC, r.Name ASC`;
 
     const [rows] = await pool.query<RowDataPacket[]>(query, values);
-  
+
     return rows.map(row => ({
       ...row,
       isLifetimePR: !!row.isLifetimePR, // Convert 1/0 to boolean

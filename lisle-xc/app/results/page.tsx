@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 
 import ResultsSearch from '@/components/ResultsSearch';
+import Pagination from '@/components/Pagination';
 
 import { timeToSeconds, formatRaceTime, generateSlug } from '@/lib/utils';
 import {LifetimePRIcon, SeasonPRIcon} from '@/components/Icons';
+import RunnerAvatar from '@/components/RunnerAvatar';
 
 interface RunnerOption { Key: number; Name: string; }
 interface RouteOption { RouteKey: number; Name: string; }
@@ -41,7 +43,7 @@ interface FilterPayload {
   level?: 'HS' | 'JH';
 }
 
-type SortColumn = 'Runner' | 'Grade' | 'Time' | null;
+type SortColumn = 'Runner' | 'Grade' | 'Time' | 'Date' | 'MeetName' | 'FormattedDistance' |null;
 type SortDirection = 'asc' | 'desc';
 
 export default function ResultsPage() {
@@ -62,45 +64,20 @@ export default function ResultsPage() {
 
   useEffect(() => {
     setPageInput(currentPage.toString());
-}, [currentPage]);
+  }, [currentPage]);
 
-const handlePageJump = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  if (e.key === 'Enter') {
-    const val = parseInt(pageInput);
-    if (!isNaN(val) && val >= 1 && val <= totalPages) {
-      setCurrentPage(val);
-    } else {
-      setPageInput(currentPage.toString()); // Reset on invalid input
+  const handlePageJump = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const val = parseInt(pageInput);
+      if (!isNaN(val) && val >= 1 && val <= totalPages) {
+        setCurrentPage(val);
+      } else {
+        setPageInput(currentPage.toString()); // Reset on invalid input
+      }
     }
-  }
-};
-
-const handleClearFilters = () => {
-  // 1. Reset the form state to empty strings
-  const clearedForm = {
-    startDate: '', 
-    endDate: '', 
-    athleteId: '', 
-    gender: '', 
-    grade: '',
-    routeId: '', 
-    distance: '', 
-    minTime: '', 
-    maxTime: '', 
-    prStatus: ''
   };
-  
-  setSearchForm(clearedForm);
-  
-  // 2. Reset the page input and current page
-  setPageInput('1');
-  setCurrentPage(1);
 
-  // 3. Fetch the default results for the currently active level (HS/JH)
-  fetchResults({ ...clearedForm, level: activeLevel });
-};
-
-  // Options for our dropdowns
+  // Options for dropdowns
   const [options, setOptions] = useState<{
     runners: RunnerOption[];
     routes: RouteOption[];
@@ -108,12 +85,12 @@ const handleClearFilters = () => {
   }>({ runners: [], routes: [], distances: [] });
 
   // Search Form State
-  const [searchForm, setSearchForm] = useState({
+  const [searchForm] = useState({
     startDate: '', endDate: '', athleteId: '', gender: '', grade: '',
     routeId: '', distance: '', minTime: '', maxTime: '', prStatus: ''
   });
 
-  // 1. Fetch dropdown options on initial load
+  // Fetch dropdown options on initial load
   useEffect(() => {
     const fetchOptions = async () => {
       try {
@@ -127,45 +104,36 @@ const handleClearFilters = () => {
     fetchOptions();
   }, []);
 
-  // 2. Fetch results whenever the level changes or a search is submitted
-  const fetchResults = async (overrideFilters: FilterPayload | null = null) => {
+  // Fetch results whenever the level changes or a search is submitted
+  const fetchResults = useCallback(async (overrideFilters: FilterPayload | null = null) => {
     setIsLoading(true);
     try {
+      // If no override provided, use current form state + active level
       const payload = overrideFilters || { ...searchForm, level: activeLevel };
+      
       const res = await fetch('/api/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
+      if (!res.ok) throw new Error('Network response was not ok');
+      
       const data: ResultItem[] = await res.json();
       
-      let finalData = data;
-      if (searchForm.prStatus === 'Lifetime') finalData = finalData.filter(r => r.isLifetimePR);
-      if (searchForm.prStatus === 'Season') finalData = finalData.filter(r => r.isSeasonPR);
-      
-      setResults(finalData);
-      setCurrentPage(1); // Reset to first page on new fetch
+      setResults(data);
+      setCurrentPage(1); 
     } catch (error) {
       console.error("Failed to load results", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchForm, activeLevel]); 
 
-  // 3. Initial load defaults to current season for the active level
   useEffect(() => {
-    fetchResults({ level: activeLevel });
-  }, [activeLevel]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setSearchForm({ ...searchForm, [e.target.name]: e.target.value });
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchResults();
-    setActiveView('Table'); // Automatically switch to the flat table on search
-  };
+    // We pass the level specifically to ensure the initial load is correct even if the form hasn't been touched.
+    fetchResults({ ...searchForm, level: activeLevel });
+}, [activeLevel, fetchResults, searchForm]);
 
   // Sorting Handler
   const handleSort = (key: SortColumn) => {
@@ -177,7 +145,6 @@ const handleClearFilters = () => {
     setCurrentPage(1);
   };
 
-  // Apply Sorting
   // Apply Sorting
   const sortedResults = [...results].sort((a, b) => {
     let primaryDiff = 0;
@@ -214,9 +181,9 @@ const handleClearFilters = () => {
     currentPage * itemsPerPage
   );
 
-// 1. Group by a unique string that includes the Date
+  // Group by a unique string that includes the Date
   const groupedByMeet = results.reduce((acc, result) => {
-    // e.g., "Lisle Invite|2024-09-15"
+    // e.g., "Ken Jakalski Mane Event|2024-10-05"
     const uniqueMeetKey = `${result.MeetName}|${result.Date}`; 
     
     if (!acc[uniqueMeetKey]) acc[uniqueMeetKey] = [];
@@ -245,7 +212,6 @@ const handleClearFilters = () => {
 
       {/* TOP CONTROLS */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-background p-4 rounded-2xl border border-border">
-        
         {/* View Toggle */}
         <div className="flex bg-light-blue-gray rounded-xl p-1 shadow-inner shrink-0 w-full md:w-auto">
           <button 
@@ -286,45 +252,45 @@ const handleClearFilters = () => {
       </div>
 
       {/* SEARCH FORM */}
-<ResultsSearch 
-  key={activeLevel} // This is the fix! It resets the component state when switching levels
-  options={options} 
-  activeLevel={activeLevel} 
-  onSearch={(filters) => {
-    setCurrentPage(1); 
-    fetchResults(filters); // Use your existing fetch function here
-  }} 
-/>
+      <ResultsSearch 
+        key={activeLevel}
+        options={options} 
+        activeLevel={activeLevel} 
+        onSearch={(filters) => {
+          setCurrentPage(1); 
+          fetchResults(filters); 
+        }} 
+      />
 
       {/* RESULTS DISPLAY */}
       <div className="space-y-8">
         {isLoading ? (
-          <div className="text-center py-12 text-light-gray font-bold animate-pulse">Loading Results...</div>
+          <div className="text-center py-12 text-light-gray bg-background font-bold border border-border rounded-2xl overflow-hidden shadow-sm animate-pulse">Loading Results...</div>
         ) : results.length === 0 ? (
-          <div className="text-center py-12 text-light-gray font-bold">No results found for these filters.</div>
+          <div className="text-center py-12 text-light-gray bg-background font-bold border border-border rounded-2xl overflow-hidden shadow-sm">No results found for these filters.</div>
         ) : activeView === 'Table' ? (
           /* --- SINGLE TABLE VIEW --- */
           <div className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm">
             <div className="p-0 overflow-x-auto">
-              <table className="w-full text-left text-sm min-w-[700px]">
-                <thead className="bg-background text-light-gray font-bold uppercase border-b border-light-blue-gray select-none">
+              <table className="w-full text-left text-sm min-w-175">
+                <thead className="bg-background text-foreground font-bold uppercase border-b border-light-blue-gray select-none">
                   <tr>
-                    <th className="px-4 py-3 cursor-pointer hover:text-lisle-blue transition-colors" onClick={() => handleSort('Runner')}>
+                    <th className="px-4 py-3 cursor-pointer hover:text-light-blue transition-colors" onClick={() => handleSort('Runner')}>
                       Runner {getSortIcon('Runner')}
                     </th>
-                    <th className="px-4 py-3 cursor-pointer hover:text-lisle-blue transition-colors" onClick={() => handleSort('Grade')}>
+                    <th className="px-4 py-3 cursor-pointer hover:text-light-blue transition-colors" onClick={() => handleSort('Grade')}>
                       Grade {getSortIcon('Grade')}
                     </th>
-                    <th className="px-4 py-3 cursor-pointer hover:text-lisle-blue transition-colors" onClick={() => handleSort('Time')}>
+                    <th className="px-4 py-3 cursor-pointer hover:text-light-blue transition-colors" onClick={() => handleSort('Time')}>
                       Time {getSortIcon('Time')}
                     </th>
-                    <th className="px-4 py-3 cursor-pointer hover:text-lisle-blue transition-colors" onClick={() => handleSort('MeetName')}>
+                    <th className="px-4 py-3 cursor-pointer hover:text-light-blue transition-colors" onClick={() => handleSort('MeetName')}>
                       Meet {getSortIcon('MeetName')}
                     </th>
-                    <th className="px-4 py-3 cursor-pointer hover:text-lisle-blue transition-colors" onClick={() => handleSort('Date')}>
+                    <th className="px-4 py-3 cursor-pointer hover:text-light-blue transition-colors" onClick={() => handleSort('Date')}>
                       Date {getSortIcon('Date')}
                     </th>
-                    <th className="px-4 py-3 cursor-pointer hover:text-lisle-blue transition-colors" onClick={() => handleSort('FormattedDistance')}>
+                    <th className="px-4 py-3 cursor-pointer hover:text-light-blue transition-colors" onClick={() => handleSort('FormattedDistance')}>
                       Distance {getSortIcon('FormattedDistance')}
                     </th>
                   </tr>
@@ -333,31 +299,33 @@ const handleClearFilters = () => {
                   {paginatedResults.map((r, idx) => (
                     <tr key={idx} className="border-b border-light-blue-gray/30 hover:bg-light-blue-gray/10 transition-colors">
                       <td className="px-4 py-3 flex items-center space-x-3">
-                        <Link href={`/runners/${r.RunnerID}-${generateSlug(r.Runner)}`} className="flex items-center space-x-3 hover:text-light-blue transition-colors text-foreground font-bold">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-light-blue-gray shrink-0 border border-border">
-                            {r.AvatarURL ? (
-                              <img src={r.AvatarURL} alt={r.Runner} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-lisle-blue font-bold text-xs">{r.Runner.charAt(0)}</div>
-                            )}
-                          </div>
+                        <Link 
+                          href={`/runners/${r.RunnerID}-${generateSlug(r.Runner)}`} 
+                          className="flex items-center space-x-3 hover:text-light-blue transition-colors text-foreground font-bold group"
+                        >
+                          <RunnerAvatar 
+                            src={r.AvatarURL} 
+                            name={r.Runner} 
+                            size="sm" 
+                            className="group-hover:scale-105" 
+                          />
                           <span>{r.Runner}</span>
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-foreground">{r.Grade}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-  <div className="flex items-center space-x-2">
-    <span className="font-bold text-lisle-blue">
-      {formatRaceTime(r.Time)}
-    </span>
-    {/* PR Icons */}
-    {r.isLifetimePR ? (
-      <LifetimePRIcon className="shrink-0" />
-    ) : r.isSeasonPR ? (
-      <SeasonPRIcon className="shrink-0" />
-    ) : null}
-  </div>
-</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-foreground">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold">
+                            {formatRaceTime(r.Time)}
+                          </span>
+                          {/* PR Icons */}
+                          {r.isLifetimePR ? (
+                            <LifetimePRIcon className="shrink-0" />
+                          ) : r.isSeasonPR ? (
+                            <SeasonPRIcon className="shrink-0" />
+                          ) : null}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-foreground">{r.MeetName}</td>
                       <td className="px-4 py-3 text-foreground">{new Date(r.Date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
                       <td className="px-4 py-3 text-foreground">{r.FormattedDistance}</td>
@@ -368,38 +336,11 @@ const handleClearFilters = () => {
             </div>
             
             {/* Pagination Controls */}
-{totalPages > 1 && (
-  <div className="bg-light-blue-gray/20 border-t border-border p-4 flex justify-between items-center text-sm font-bold text-lisle-blue">
-    <button 
-      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-      disabled={currentPage === 1}
-      className={`flex items-center space-x-1 transition-colors ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:text-light-blue cursor-pointer'}`}
-    >
-      <ChevronLeft size={16} /> <span>Previous</span>
-    </button>
-
-    <div className="flex items-center space-x-2">
-      <span>Page</span>
-      <input 
-        type="text"
-        value={pageInput}
-        onChange={(e) => setPageInput(e.target.value)}
-        onKeyDown={handlePageJump}
-        onBlur={() => setPageInput(currentPage.toString())}
-        className="w-12 text-center p-1 border border-border rounded bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-lisle-blue"
-      />
-      <span>of {totalPages}</span>
-    </div>
-
-    <button 
-      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-      disabled={currentPage === totalPages}
-      className={`flex items-center space-x-1 transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:text-light-blue cursor-pointer'}`}
-    >
-      <span>Next</span> <ChevronRight size={16} />
-    </button>
-  </div>
-)}
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+            />
           </div>
        ) : activeView === 'Meet' ? (
           /* --- MEET VIEW --- */
@@ -414,8 +355,8 @@ const handleClearFilters = () => {
                   <p className="text-sm text-lisle-blue">{new Date(meetResults[0].Date).toLocaleDateString()} • {meetResults[0].FormattedDistance}</p>
                 </div>
                 <div className="p-0 overflow-x-auto">
-                  <table className="w-full text-left text-sm min-w-[500px]">
-                    <thead className="bg-background text-light-gray font-bold uppercase border-b border-light-blue-gray">
+                  <table className="w-full text-left text-sm min-w-125">
+                    <thead className="bg-background text-foreground font-bold uppercase border-b border-light-blue-gray">
                       <tr>
                         <th className="px-4 py-3">Runner</th>
                         <th className="px-4 py-3">Grade</th>
@@ -426,21 +367,23 @@ const handleClearFilters = () => {
                       {meetResults.map((r, idx) => (
                         <tr key={idx} className="border-b border-light-blue-gray/30 hover:bg-light-blue-gray/10 transition-colors">
                           <td className="px-4 py-3 flex items-center space-x-3">
-                            <Link href={`/runners/${r.RunnerID}-${generateSlug(r.Runner)}`} className="flex items-center space-x-3 hover:text-light-blue transition-colors text-foreground font-bold">
-                              <div className="w-8 h-8 rounded-full overflow-hidden bg-light-blue-gray shrink-0 border border-border">
-                                {r.AvatarURL ? (
-                                  <img src={r.AvatarURL} alt={r.Runner} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-lisle-blue font-bold text-xs">{r.Runner.charAt(0)}</div>
-                                )}
-                              </div>
+                            <Link 
+                              href={`/runners/${r.RunnerID}-${generateSlug(r.Runner)}`} 
+                              className="flex items-center space-x-3 hover:text-light-blue transition-colors text-foreground font-bold group"
+                            >
+                              <RunnerAvatar 
+                                src={r.AvatarURL} 
+                                name={r.Runner} 
+                                size="sm" 
+                                className="group-hover:scale-105" 
+                              />
                               <span>{r.Runner}</span>
                             </Link>
                           </td>
                           <td className="px-4 py-3 text-foreground">{r.Grade}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
+                          <td className="px-4 py-3 whitespace-nowrap text-foreground">
                             <div className="flex items-center space-x-2">
-                              <span className="font-bold text-lisle-blue">
+                              <span className="font-bold">
                                 {formatRaceTime(r.Time)}
                               </span>
                               {/* PR Icons */}
@@ -451,7 +394,6 @@ const handleClearFilters = () => {
                               ) : null}
                             </div>
                           </td>
-                          
                         </tr>
                       ))}
                     </tbody>
@@ -468,25 +410,23 @@ const handleClearFilters = () => {
             .map(([runnerName, runnerResults]) => (
             <div key={runnerName} className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm">
                <div className="bg-light-blue-gray p-4 border-b border-border flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-background shrink-0 border-2 border-lisle-blue">
-                    {runnerResults[0].AvatarURL ? (
-                      <img src={runnerResults[0].AvatarURL} alt={runnerName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-lisle-blue font-bold text-lg">{runnerName.charAt(0)}</div>
-                    )}
-                  </div>
+                  <RunnerAvatar 
+                      src={runnerResults[0].AvatarURL} 
+                      name={runnerName} 
+                      size="md" 
+                  />
                   <h3 className="text-lg font-bold text-lisle-blue">
-  <Link 
-    href={`/runners/${runnerResults[0].RunnerID}-${generateSlug(runnerName)}`}
-    className="hover:underline cursor-pointer"
-  >
-    {runnerName}
-  </Link>
-</h3>
+                    <Link 
+                      href={`/runners/${runnerResults[0].RunnerID}-${generateSlug(runnerName)}`}
+                      className="hover:underline cursor-pointer"
+                    >
+                      {runnerName}
+                    </Link>
+                  </h3>
               </div>
               <div className="p-0 overflow-x-auto">
-                <table className="w-full text-left text-sm min-w-[500px]">
-                  <thead className="bg-background text-light-gray font-bold uppercase border-b border-light-blue-gray">
+                <table className="w-full text-left text-sm min-w-125">
+                  <thead className="bg-background text-foreground font-bold uppercase border-b border-light-blue-gray">
                     <tr>
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Meet</th>
@@ -500,19 +440,19 @@ const handleClearFilters = () => {
                         <td className="px-4 py-3 text-foreground">{new Date(r.Date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
                         <td className="px-4 py-3 text-foreground font-bold">{r.MeetName}</td>
                         <td className="px-4 py-3 text-foreground">{r.FormattedDistance}</td>
- <td className="px-4 py-3 whitespace-nowrap">
-  <div className="flex items-center space-x-2">
-    <span className="font-bold text-lisle-blue">
-      {formatRaceTime(r.Time)}
-    </span>
-    {/* PR Icons */}
-    {r.isLifetimePR ? (
-      <LifetimePRIcon className="shrink-0" />
-    ) : r.isSeasonPR ? (
-      <SeasonPRIcon className="shrink-0" />
-    ) : null}
-  </div>
-</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center space-x-2 text-foreground">
+                            <span className="font-bold">
+                              {formatRaceTime(r.Time)}
+                            </span>
+                            {/* PR Icons */}
+                            {r.isLifetimePR ? (
+                              <LifetimePRIcon className="shrink-0" />
+                            ) : r.isSeasonPR ? (
+                              <SeasonPRIcon className="shrink-0" />
+                            ) : null}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

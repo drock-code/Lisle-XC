@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { User } from 'lucide-react';
+
+import RunnerAvatar from '@/components/RunnerAvatar';
 
 import { searchRunners } from '@/lib/queries'; 
 import { generateSlug } from '@/lib/utils';
@@ -21,7 +22,7 @@ export default async function SearchPage({
               Please enter a search term
             </h2>
             <p className="font-body text-foreground/80 leading-relaxed text-lg">
-              Use the search bar in the navigation menu to find what you're looking for.
+              Use the search bar in the navigation menu to find what you&apos;re looking for.
             </p>
           </div>
         </section>
@@ -42,13 +43,13 @@ export default async function SearchPage({
           </div>
           
           <h2 className="font-heading font-bold text-3xl md:text-4xl text-foreground uppercase tracking-tight mb-8 leading-tight">
-            Results for "{query}"
+            Results for &quot;{query}&quot;
           </h2>
 
           {results.length === 0 ? (
             <div className="p-10 bg-black/20 border border-border border-dashed rounded-xl text-center">
               <p className="font-body text-foreground leading-relaxed text-lg">
-                No results found matching "{query}". 
+                No results found matching &quot;{query}&quot;. 
                 <br /> Try checking the spelling or using just the first or last name if you are searching for a runner.
               </p>
             </div>
@@ -63,11 +64,12 @@ export default async function SearchPage({
                   <div className="flex items-center gap-4">
                     {/* Avatar - matches the hover state colors */}
                     <div className="w-14 h-14 rounded-full bg-light-blue-gray flex items-center justify-center border border-border shrink-0 overflow-hidden text-foreground group-hover:bg-lisle-blue/10 group-hover:text-lisle-blue transition-colors">
-                      {runner.AvatarURL ? (
-                        <img src={runner.AvatarURL} alt={runner.Name} className="w-full h-full object-cover" />
-                      ) : (
-                        <User size={80} strokeWidth={1.5} className="mt-6" />
-                      )}
+                      <RunnerAvatar 
+                        src={runner.AvatarURL} 
+                        name={runner.Name} 
+                        size="md" 
+                        className="group-hover:bg-lisle-blue/10 group-hover:text-lisle-blue"
+                      />
                     </div>
                     
                     {/* Runner Info */}

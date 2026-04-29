@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LifetimePRIcon, SeasonPRIcon } from '@/components/Icons';
 import Button  from '@/components/Button'
 
@@ -78,7 +78,7 @@ export default function ResultsSearch({ options, activeLevel, onSearch }: Result
 
   return (
     <form onSubmit={handleSearchSubmit} className="bg-background border border-border rounded-2xl p-6 shadow-sm space-y-4">
-      <h2 className="font-heading text-xl font-bold text-lisle-blue border-b border-light-blue-gray pb-2 mb-4">
+      <h2 className="font-heading text-xl font-bold text-foreground border-b border-light-blue-gray pb-2 mb-4">
         Search Filters
       </h2>
       
@@ -190,28 +190,27 @@ export default function ResultsSearch({ options, activeLevel, onSearch }: Result
         </div>
 
         <div className="flex w-full sm:w-auto gap-3">
-  {/* Clear Filters - Now White Style (Secondary) */}
-  <Button 
-    type="button" 
-    size="md"
-    isActive={true}
-    onClick={handleClearFilters}
-    className="flex-1 sm:flex-none"
-  >
-    Clear Filters
-  </Button>
+          {/* Clear Filters */}
+          <Button 
+            type="button" 
+            size="md"
+            isActive={true}
+            onClick={handleClearFilters}
+            className="flex-1 sm:flex-none"
+          >
+            Clear Filters
+          </Button>
 
-  {/* Search Results - Now Blue Style (Primary) */}
-  <Button 
-    type="submit" 
-    size="md"
-    isActive={false}
-    className="flex-1 sm:flex-none"
-  >
-    Search Results
-  </Button>
-</div>
-
+          {/* Search Results */}
+          <Button 
+            type="submit" 
+            size="md"
+            isActive={false}
+            className="flex-1 sm:flex-none"
+          >
+            Search Results
+          </Button>
+        </div>
       </div>
     </form>
   );
