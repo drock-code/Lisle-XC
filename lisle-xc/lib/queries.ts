@@ -1,6 +1,10 @@
 import { pool } from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
+export interface AwardYear extends RowDataPacket {
+  Year: number;
+}
+
 export interface FAQRow extends RowDataPacket {
   Key: number;
   Order: number;
@@ -20,6 +24,15 @@ export interface NoteRow extends RowDataPacket {
   Title: string;
   Note: string;
   Image: string | null;
+}
+
+export interface RunnerAwardRow extends RowDataPacket {
+  Key: number;
+  Name: string;
+  Award: string;
+  Year: number;
+  RunnerKey: number | null;
+  AvatarURL: string | null;
 }
 
 export interface RunnerProfileRow extends RowDataPacket {
@@ -65,6 +78,13 @@ export interface SearchFilters {
   prStatus?: 'Lifetime' | 'Season' | '';
 }
 
+export interface TeamAwardRow extends RowDataPacket {
+  ID: number;
+  TeamName: string;
+  Award: string;
+  Year: number;
+}
+
 /*************************** FAQ QUERIES *********************************/
   export async function getFAQs() {
     const [rows] = await pool.query<FAQRow[]>(
@@ -100,6 +120,37 @@ export interface SearchFilters {
     return rows;
   }
 /*************************** END OF NEWS QUERIES *********************************/
+
+/*************************** RECORDS PAGE QUERIES *********************************/
+  export async function getAwardYears(): Promise<number[]> {
+    // Get unique years from both tables to populate the dropdown
+    const [rows] = await pool.query(`
+      SELECT DISTINCT Year FROM TeamAward
+      UNION
+      SELECT DISTINCT Year FROM RunnerAward
+      ORDER BY Year DESC
+    `);
+    return (rows as AwardYear[]).map(r => r.Year);
+  }
+
+  export async function getAwardsByYear(year: number) {
+    const [teamAwards] = await pool.query<TeamAwardRow[]>(`
+      SELECT * FROM TeamAward WHERE Year = ? ORDER BY Award ASC
+    `, [year]);
+
+    const [runnerAwards] = await pool.query<RunnerAwardRow[]>(`
+      SELECT ra.*, r.AvatarURL 
+      FROM RunnerAward ra
+      LEFT JOIN Runner r ON ra.RunnerKey = r.Key
+      WHERE ra.Year = ?
+      ORDER BY ra.Award ASC
+    `, [year]);
+
+    return { teamAwards, runnerAwards };
+  }
+
+
+/*************************** END OF RECORDS QUERIES *********************************/
 
 /*************************** RESULTS PAGE QUERIES *********************************/
   export async function getResultsFilterOptions() {
