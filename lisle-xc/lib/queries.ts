@@ -5,11 +5,57 @@ export interface AwardYear extends RowDataPacket {
   Year: number;
 }
 
+export interface CaptainRow extends RowDataPacket {
+  Key: number;
+  Name: string;
+  Year: number;
+  RunnerKey: number | null;
+  AvatarURL: string | null;
+}
+
 export interface FAQRow extends RowDataPacket {
   Key: number;
   Order: number;
   Title: string;
   Content: string;
+}
+
+export interface LeaderboardParams {
+  gender: string;
+  distance?: string;
+  course?: string;
+  grade?: string;
+  limit: number;
+  offset: number;
+}
+
+export interface LeaderboardResult extends RowDataPacket {
+  RunnerID: number;
+  RunnerName: string;
+  Time: string;
+  Date: Date;
+  AvatarURL: string | null;
+}
+
+export interface DynamicLeaderboardRow extends RowDataPacket {
+  RunnerKey: number;
+  Name: string;
+  AvatarURL: string | null;
+  Time: string; 
+  Course: string;
+  Date: Date | string; 
+}
+
+interface CountRow extends RowDataPacket {
+  total: number;
+}
+
+interface DistanceOptionRow extends RowDataPacket {
+  Distance: string | number;
+}
+
+interface CourseOptionRow extends RowDataPacket {
+  Course: string;
 }
 
 export interface MeetResult {
@@ -26,10 +72,20 @@ export interface NoteRow extends RowDataPacket {
   Image: string | null;
 }
 
+export interface RecordRule extends RowDataPacket {
+  Key: number;
+  Meet: string;
+  Distance: number;
+  Grade: number;
+  Gender: string;
+  MaxRunners: number;
+}
+
 export interface RunnerAwardRow extends RowDataPacket {
   Key: number;
   Name: string;
   Award: string;
+  IsJH: number;
   Year: number;
   RunnerKey: number | null;
   AvatarURL: string | null;
@@ -147,6 +203,141 @@ export interface TeamAwardRow extends RowDataPacket {
     `, [year]);
 
     return { teamAwards, runnerAwards };
+  }
+
+  export async function getCaptains(): Promise<CaptainRow[]> {
+    const [rows] = await pool.query<CaptainRow[]>(`
+      SELECT c.*, r.AvatarURL 
+      FROM Captain c
+      LEFT JOIN Runner r ON c.RunnerKey = r.Key
+      ORDER BY c.Year DESC, c.Name ASC
+    `);
+    return rows;
+  }
+
+  // 3. Fetch the dynamic leaderboard
+export async function getDynamicLeaderboard(params: LeaderboardParams) {
+  let baseWhere = `WHERE r.Gender = ? AND rr.Time != '00:00:00'`;
+  const queryParams: (string | number)[] = [params.gender];
+
+  if (params.distance) {
+    // Filter by the Distance in the Route table
+    baseWhere += ` AND ro.Distance = ?`;
+    queryParams.push(params.distance);
+  }
+  if (params.course) {
+    baseWhere += ` AND ro.Name = ?`; 
+    queryParams.push(params.course);
+  }
+  if (params.grade) {
+    baseWhere += ` AND r.Grade = ?`;
+    queryParams.push(params.grade);
+  }
+
+  const query = `
+    WITH RankedResults AS (
+      SELECT 
+        r.Key as RunnerKey, 
+        r.Name, 
+        r.AvatarURL, 
+        rr.Time, 
+        ro.Name as Course, 
+        rr.Date,
+        ROW_NUMBER() OVER(PARTITION BY r.Key ORDER BY rr.Time ASC) as rn
+      FROM RunnerResult rr
+      JOIN Runner r ON rr.RunnerID = r.Key
+      /* FIX: Bridge through MeetRace to get the correct Route */
+      LEFT JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      LEFT JOIN Route ro ON mr.RouteKey = ro.RouteKey
+      ${baseWhere}
+    )
+    SELECT * FROM RankedResults 
+    WHERE rn = 1
+    ORDER BY Time ASC
+    LIMIT ? OFFSET ?
+  `;
+
+  queryParams.push(params.limit, params.offset);
+
+  const [results] = await pool.query<DynamicLeaderboardRow[]>(query, queryParams);
+  
+  const countQuery = `
+    SELECT COUNT(DISTINCT r.Key) as total
+    FROM RunnerResult rr
+    JOIN Runner r ON rr.RunnerID = r.Key
+    /* FIX: Make sure the count query uses the same bridge! */
+    LEFT JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+    LEFT JOIN Route ro ON mr.RouteKey = ro.RouteKey 
+    ${baseWhere}
+  `;
+  
+  const countParams = queryParams.slice(0, -2); 
+  const [countResult] = await pool.query<CountRow[]>(countQuery, countParams);
+  
+  return {
+    results,
+    totalCount: countResult[0].total
+  };
+}
+
+// 4. Fetch unique options to populate our Select dropdowns
+export async function getLeaderboardOptions() {
+  // Add ro.DistanceUnit to the SELECT statement
+  const [distances] = await pool.query<DistanceOptionRow[]>(
+    `SELECT DISTINCT ro.Distance, ro.DistanceUnit 
+     FROM RunnerResult rr
+     JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+     JOIN Route ro ON mr.RouteKey = ro.RouteKey
+     WHERE ro.Distance IS NOT NULL 
+     ORDER BY ro.Distance ASC`
+  );
+  
+  const [courses] = await pool.query<CourseOptionRow[]>(
+    `SELECT DISTINCT ro.Name as Course 
+     FROM RunnerResult rr
+     JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+     JOIN Route ro ON mr.RouteKey = ro.RouteKey
+     WHERE ro.Name IS NOT NULL 
+     ORDER BY ro.Name ASC`
+  );
+  
+  return {
+    // Map this to an object with a value AND a label
+    distances: distances.map(d => ({
+      value: Number(d.Distance).toString(),
+      // Fallback to 'Miles' if the database has a blank/null unit
+      label: `${Number(d.Distance)} ${d.DistanceUnit || 'Miles'}` 
+    })),
+    courses: courses.map(c => c.Course)
+  };
+}
+
+  export async function getRecords() {
+    // 1. Fetch the Record rules
+    const [rules] = await pool.query<RecordRule[]>(`
+      SELECT * FROM Record ORDER BY Meet ASC, Distance ASC, Grade ASC, Gender ASC
+    `);
+
+    const records = [];
+
+    // 2. Fetch the Top X results for each record rule (Assuming records only list a runner's best time)
+    for (const rule of rules) {
+      const [results] = await pool.query<LeaderboardResult[]>(`
+        SELECT 
+          r.Key as RunnerID, r.Name as RunnerName, r.AvatarURL,
+          MIN(rr.Time) as Time
+        FROM RunnerResult rr
+        JOIN Runner r ON rr.RunnerID = r.Key
+        WHERE rr.MeetName = ? AND rr.Distance = ? AND r.Grade = ? AND r.Gender = ?
+        GROUP BY r.Key, r.Name, r.AvatarURL
+        ORDER BY Time ASC
+        LIMIT ?
+      `, [rule.Meet, rule.Distance, rule.Grade, rule.Gender, rule.MaxRunners]);
+
+      records.push({ rule, results });
+    }
+
+    return records;
   }
 
 

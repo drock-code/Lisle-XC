@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 import ResultsSearch from '@/components/ResultsSearch';
 import Pagination from '@/components/Pagination';
+import { TabGroup, Tab } from '@/components/Tabs';
 
 import { timeToSeconds, formatRaceTime, generateSlug } from '@/lib/utils';
 import {LifetimePRIcon, SeasonPRIcon} from '@/components/Icons';
@@ -65,17 +66,6 @@ export default function ResultsPage() {
   useEffect(() => {
     setPageInput(currentPage.toString());
   }, [currentPage]);
-
-  const handlePageJump = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const val = parseInt(pageInput);
-      if (!isNaN(val) && val >= 1 && val <= totalPages) {
-        setCurrentPage(val);
-      } else {
-        setPageInput(currentPage.toString()); // Reset on invalid input
-      }
-    }
-  };
 
   // Options for dropdowns
   const [options, setOptions] = useState<{
@@ -212,43 +202,30 @@ export default function ResultsPage() {
 
       {/* TOP CONTROLS */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-background p-4 rounded-2xl border border-border">
+        
         {/* View Toggle */}
-        <div className="flex bg-light-blue-gray rounded-xl p-1 shadow-inner shrink-0 w-full md:w-auto">
-          <button 
-            onClick={() => setActiveView('Meet')}
-            className={`flex-1 md:flex-none px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'Meet' ? 'bg-background text-foreground shadow-sm' : 'text-lisle-blue hover:text-background cursor-pointer'}`}
-          >
-            By Meet
-          </button>
-          <button 
-            onClick={() => setActiveView('Runner')}
-            className={`flex-1 md:flex-none px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'Runner' ? 'bg-background text-foreground shadow-sm' : 'text-lisle-blue hover:text-background cursor-pointer'}`}
-          >
-            By Runner
-          </button>
-          <button 
-            onClick={() => setActiveView('Table')}
-            className={`flex-1 md:flex-none px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'Table' ? 'bg-background text-foreground shadow-sm' : 'text-lisle-blue hover:text-background cursor-pointer'}`}
-          >
-            All Results
-          </button>
-        </div>
+        <TabGroup className="md:w-auto">
+          <Tab onClick={() => setActiveView('Meet')} label="By Meet" isActive={activeView === 'Meet'} />
+          <Tab onClick={() => setActiveView('Runner')} label="By Runner" isActive={activeView === 'Runner'} />
+          <Tab onClick={() => setActiveView('Table')} label="All Results" isActive={activeView === 'Table'} />
+        </TabGroup>
 
         {/* HS vs JH Toggle */}
-        <div className="flex bg-light-blue-gray rounded-xl p-1 shadow-inner shrink-0 w-full md:w-auto">
-          <button 
-            onClick={() => setActiveLevel('HS')}
-            className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeLevel === 'HS' ? 'bg-background text-foreground shadow-sm' : 'text-lisle-blue hover:text-background cursor-pointer'}`}
-          >
-            High School
-          </button>
-          <button 
-            onClick={() => setActiveLevel('JH')}
-            className={`flex-1 md:flex-none px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeLevel === 'JH' ? 'bg-background text-foreground shadow-sm' : 'text-lisle-blue hover:text-background cursor-pointer'}`}
-          >
-            Junior High
-          </button>
-        </div>
+        <TabGroup className="md:w-auto">
+          <Tab 
+            onClick={() => setActiveLevel('HS')} 
+            label="High School" 
+            isActive={activeLevel === 'HS'} 
+            className="px-6 py-2.5 flex-1 md:flex-none" 
+          />
+          <Tab 
+            onClick={() => setActiveLevel('JH')} 
+            label="Junior High" 
+            isActive={activeLevel === 'JH'} 
+            className="px-6 py-2.5 flex-1 md:flex-none" 
+          />
+        </TabGroup>
+
       </div>
 
       {/* SEARCH FORM */}
