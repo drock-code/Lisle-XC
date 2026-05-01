@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { LifetimePRIcon, SeasonPRIcon } from '@/components/Icons';
 import Button  from '@/components/Button'
+import {Select} from '@/components/Select';
 
 export interface SearchFormState {
   startDate: string;
@@ -102,40 +103,40 @@ export default function ResultsSearch({ options, activeLevel, onSearch }: Result
         />
         
         {/* Athlete Select */}
-        <select name="athleteId" value={searchForm.athleteId} onChange={handleSearchChange} className="p-2 border border-border rounded text-foreground bg-background">
+        <Select name="athleteId" value={searchForm.athleteId} onChange={handleSearchChange} className="py-2 pl-3">
           <option value="">Any Athlete</option>
           {options.runners.map(r => (
             <option key={r.Key} value={r.Key.toString()}>{r.Name}</option>
           ))}
-        </select>
+        </Select>
 
         {/* Route Select */}
-        <select name="routeId" value={searchForm.routeId} onChange={handleSearchChange} className="p-2 border border-border rounded text-foreground bg-background">
+        <Select name="routeId" value={searchForm.routeId} onChange={handleSearchChange} className="py-2 pl-3">
           <option value="">Any Route</option>
           {options.routes?.map(r => (
             <option key={r.RouteKey} value={r.RouteKey.toString()}>{r.Name}</option>
           ))}
-        </select>
+        </Select>
 
         {/* Distance Select */}
-        <select name="distance" value={searchForm.distance} onChange={handleSearchChange} className="p-2 border border-border rounded text-foreground bg-background">
+        <Select name="distance" value={searchForm.distance} onChange={handleSearchChange} className="py-2 pl-3">
           <option value="">Any Distance</option>
           {options.distances.map((d, idx) => (
             <option key={idx} value={`${d.Distance}-${d.DistanceUnit}`}>
               {d.Distance} {d.DistanceUnit}
             </option>
           ))}
-        </select>
-        
+        </Select>
+
         {/* Gender Select */}
-        <select name="gender" value={searchForm.gender} onChange={handleSearchChange} className="p-2 border border-border rounded text-foreground bg-background">
+        <Select name="gender" value={searchForm.gender} onChange={handleSearchChange} className="py-2 pl-3">
           <option value="">Any Gender</option>
           <option value="M">Boys</option>
           <option value="F">Girls</option>
-        </select>
-        
+        </Select>
+
         {/* Grade Select */}
-        <select name="grade" value={searchForm.grade} onChange={handleSearchChange} className="p-2 border border-border rounded text-foreground bg-background">
+        <Select name="grade" value={searchForm.grade} onChange={handleSearchChange} className="py-2 pl-3">
           <option value="">Any Grade</option>
           <option value="12">Senior</option>
           <option value="11">Junior</option>
@@ -144,7 +145,7 @@ export default function ResultsSearch({ options, activeLevel, onSearch }: Result
           <option value="8">8th Grade</option>
           <option value="7">7th Grade</option>
           <option value="6">6th Grade</option>
-        </select>
+        </Select>
 
         {/* Time Inputs */}
         <div className="flex space-x-2">
