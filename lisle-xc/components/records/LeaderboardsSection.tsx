@@ -12,9 +12,7 @@ interface LeaderboardsSectionProps {
 }
 
 export default async function LeaderboardsSection({ searchParams = {} }: LeaderboardsSectionProps) {
-  const defaultGender = Math.random() > 0.5 ? 'M' : 'F';
-  
-  const gender = searchParams.gender || defaultGender;
+  const gender = searchParams.gender || 'F';
   
   // If it's missing, default to '3'. If they explicitly chose 'any', use an empty string so the SQL ignores it.
   const rawDistance = searchParams.distance || '3'; 

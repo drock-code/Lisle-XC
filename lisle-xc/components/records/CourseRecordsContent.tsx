@@ -17,8 +17,8 @@ type GroupedCourse = {
   grades: Record<number, GradeRecord>;
 };
 
-// Define your state meet course names exactly as they appear in the database
-const STATE_COURSES = ['Detweiller Park, Peoria', ' Maxwell Park, Normal']; 
+// State meet courses will ALWAYS be shown and have a unique badge
+const STATE_COURSES = [' Detweiller Park, Peoria', ' Maxwell Park, Normal']; 
 
 export default function CourseRecordsContent({ records }: CourseRecordsContentProps) {
   const [activeLevel, setActiveLevel] = useState<'HS' | 'JH'>('HS');
@@ -52,24 +52,20 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
     8: '8th Grade', 7: '7th Grade', 6: '6th Grade'
   };
 
-  // 2. Filter the courses based on your new rules
+  // Filter the courses based on your new rules
   const visibleCourses = allCourses.filter(course => {
-    // Check if the course is one of the designated State meets
     const isStateCourse = STATE_COURSES.includes(course.courseName);
 
     // First, ensure the course has at least ONE record for this level.
-    // (This prevents the HS State meet from showing up on the JH tab as an empty card).
     const hasAnyRecordForLevel = displayGrades.some(
       grade => course.grades[grade]?.M || course.grades[grade]?.F
     );
 
     if (!hasAnyRecordForLevel) return false;
 
-    // Check if it has a record at EVERY grade level for the active tab.
-    // (If you want to be super strict and require BOTH Boys and Girls at every level, 
-    // change the "||" to an "&&" below).
+    // Check if it has a record at EVERY grade and gender level for the active tab.
     const hasEveryGrade = displayGrades.every(
-      grade => course.grades[grade]?.M || course.grades[grade]?.F
+      grade => course.grades[grade]?.M && course.grades[grade]?.F
     );
 
     // Keep it if it has every grade, OR if it's a State course
@@ -80,10 +76,12 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
     <div className="space-y-6">
       
       {/* Header and Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-foreground">Course Records by Grade</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-background p-4 sm:p-6 rounded-2xl border border-border shadow-sm">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+          Course Records by Grade
+        </h2>
         
-        <div className="w-full sm:w-auto">
+        <div className="w-full sm:w-auto shrink-0">
           <TabGroup>
             <Tab 
               label="High School" 
@@ -101,7 +99,7 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
 
       {/* Grid of Cards */}
       {visibleCourses.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {visibleCourses.map((course) => (
             <div 
               key={course.courseName} 
@@ -113,17 +111,17 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
                   <h3 className="font-bold text-lg text-foreground">{course.courseName}</h3>
                   <p className="text-sm font-medium text-muted-foreground">{course.distanceInfo}</p>
                 </div>
-                {/* Optional: Add a little badge to indicate it's a State course */}
+                {/* Badge to indicate it's a State course */}
                 {STATE_COURSES.includes(course.courseName) && (
-                  <span className="text-[10px] uppercase font-bold tracking-wider bg-lisle-blue/10 text-lisle-blue px-2 py-1 rounded-md">
-                    State Meet
+                  <span className="text-[10px] uppercase font-bold tracking-wider bg-background text-foreground border border-border px-2 py-1 rounded-md">
+                    State Course
                   </span>
                 )}
               </div>
 
               {/* Card Body (Mini Table) */}
               <div className="p-0 overflow-x-auto">
-                <table className="w-full text-sm text-left">
+                <table className="w-full text-sm text-left border-b border-border">
                   <thead className="bg-background text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                     <tr>
                       <th className="px-4 py-3 w-1/4">Grade</th>
@@ -145,34 +143,40 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
                           {/* Boys Column */}
                           <td className="px-4 py-3 border-l border-border">
                             {gradeData?.M ? (
-                              <Link 
-                                href={`/runners/${gradeData.M.RunnerKey}-${generateSlug(gradeData.M.RunnerName)}`}
-                                className="group block"
-                              >
-                                <div className="font-bold text-lisle-blue group-hover:text-light-blue transition-colors">
+                              <div className="flex flex-col space-y-0.5">
+                                <span className="font-bold text-foreground">
                                   {formatRaceTime(gradeData.M.Time)}
-                                </div>
-                                <div className="text-xs text-muted-foreground truncate max-w-[120px]">
+                                </span>
+                                <Link 
+                                  href={`/runners/${gradeData.M.RunnerKey}-${generateSlug(gradeData.M.RunnerName)}`}
+                                  className="text-sm font-medium text-foreground hover:text-light-blue hover:underline transition-colors truncate max-w-[140px]"
+                                >
                                   {gradeData.M.RunnerName}
-                                </div>
-                              </Link>
+                                </Link>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(gradeData.M.Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </div>
                             ) : <span className="text-muted-foreground/40">-</span>}
                           </td>
 
                           {/* Girls Column */}
                           <td className="px-4 py-3 border-l border-border">
                             {gradeData?.F ? (
-                              <Link 
-                                href={`/runners/${gradeData.F.RunnerKey}-${generateSlug(gradeData.F.RunnerName)}`}
-                                className="group block"
-                              >
-                                <div className="font-bold text-lisle-blue group-hover:text-light-blue transition-colors">
+                              <div className="flex flex-col space-y-0.5">
+                                <span className="font-bold text-foreground">
                                   {formatRaceTime(gradeData.F.Time)}
-                                </div>
-                                <div className="text-xs text-muted-foreground truncate max-w-[120px]">
+                                </span>
+                                <Link 
+                                  href={`/runners/${gradeData.F.RunnerKey}-${generateSlug(gradeData.F.RunnerName)}`}
+                                  className="text-sm font-medium text-foreground hover:text-light-blue hover:underline transition-colors truncate max-w-[140px]"
+                                >
                                   {gradeData.F.RunnerName}
-                                </div>
-                              </Link>
+                                </Link>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(gradeData.F.Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </div>
                             ) : <span className="text-muted-foreground/40">-</span>}
                           </td>
                         </tr>

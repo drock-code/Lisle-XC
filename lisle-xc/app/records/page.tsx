@@ -21,7 +21,7 @@ type SafeParams = {
 export default async function RecordsPage({ searchParams }: RecordsPageProps) {
   const rawParams = await searchParams;
   
-  // 4. Narrow the types securely right here, before you declare your currentTab
+  // Narrow the types securely right here, before you declare your currentTab
   const safeParams: SafeParams = {
     tab: typeof rawParams.tab === 'string' ? rawParams.tab : undefined,
     year: typeof rawParams.year === 'string' ? rawParams.year : undefined,
@@ -79,17 +79,16 @@ export default async function RecordsPage({ searchParams }: RecordsPageProps) {
       </TabGroup>
 
       {/* Content Rendering Area */}
-      <div className="min-h-[400px]">
+      <div className="min-h-100">
         {/* Pass the resolved year from the safe params */}
         {currentTab === 'awards' && <AwardsSection year={safeParams.year} />}
         {currentTab === 'captains' && <CaptainsSection />}
         
-        {/* 5. Pass the safeParams into the LeaderboardsSection so the filters work! */}
+        {/*Pass the safeParams into the LeaderboardsSection so the filters work */}
         {currentTab === 'leaderboards' && <LeaderboardsSection searchParams={safeParams} />}
         
         {currentTab === 'records' && <CourseRecordsSection />}
       </div>
-
     </div>
   );
 }
