@@ -1,7 +1,6 @@
 import { getDynamicLeaderboard, getLeaderboardOptions } from '@/lib/queries';
 import LeaderboardsContent from './LeaderboardsContent';
 
-// 1. Make searchParams optional using the "?" to fix the missing prop error
 interface LeaderboardsSectionProps {
   searchParams?: {
     gender?: string;
@@ -17,7 +16,7 @@ export default async function LeaderboardsSection({ searchParams = {} }: Leaderb
   
   const gender = searchParams.gender || defaultGender;
   
-  // 2. If it's missing, default to '3'. If they explicitly chose 'any', use an empty string so the SQL ignores it.
+  // If it's missing, default to '3'. If they explicitly chose 'any', use an empty string so the SQL ignores it.
   const rawDistance = searchParams.distance || '3'; 
   const distance = rawDistance === 'any' ? '' : rawDistance; 
   

@@ -2,15 +2,15 @@ import { TabGroup, Tab } from '@/components/Tabs';
 import AwardsSection from '@/components/records/AwardsSection';
 import CaptainsSection from '@/components/records/CaptainsSection';
 import LeaderboardsSection from '@/components/records/LeaderboardsSection';
+import CourseRecordsSection from '@/components/records/CourseRecordsSection';
 
 interface RecordsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-// 1. Define an explicit, safe type that enforces strings (no string arrays!)
 type SafeParams = {
   tab?: string;
-  year?: string; // Added this so AwardsSection gets the year safely!
+  year?: string;
   gender?: string;
   distance?: string;
   course?: string;
@@ -18,9 +18,7 @@ type SafeParams = {
   page?: string;
 };
 
-// 2. Make the page component async
 export default async function RecordsPage({ searchParams }: RecordsPageProps) {
-  // 3. Await the params to get the raw object from Next.js
   const rawParams = await searchParams;
   
   // 4. Narrow the types securely right here, before you declare your currentTab
@@ -89,20 +87,9 @@ export default async function RecordsPage({ searchParams }: RecordsPageProps) {
         {/* 5. Pass the safeParams into the LeaderboardsSection so the filters work! */}
         {currentTab === 'leaderboards' && <LeaderboardsSection searchParams={safeParams} />}
         
-        {currentTab === 'records' && <RecordsSection />}
+        {currentTab === 'records' && <CourseRecordsSection />}
       </div>
 
-    </div>
-  );
-}
-
-// --- SKELETON PLACEHOLDER COMPONENTS ---
-
-function RecordsSection() {
-  return (
-    <div className="bg-background rounded-3xl p-6 md:p-8 border border-border shadow-sm text-center">
-      <h2 className="text-2xl font-bold text-foreground mb-4">Course Records</h2>
-      <p className="text-muted-foreground">Top 8 runners per course, grade, and gender.</p>
     </div>
   );
 }

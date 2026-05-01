@@ -6,11 +6,9 @@ import { Select } from '@/components/Select';
 import RunnerAvatar from '@/components/RunnerAvatar';
 import { generateSlug, formatRaceTime } from '@/lib/utils';
 
-// Import your custom components! (Adjust paths if they are in a different folder)
 import Button from '@/components/Button';
 import Pagination from '@/components/Pagination';
 
-// 1. Strict types for the incoming data
 export interface LeaderboardResultRow {
   RunnerKey: number;
   Name: string;
@@ -21,7 +19,6 @@ export interface LeaderboardResultRow {
 }
 
 export interface LeaderboardOptions {
-  // Updated to use the value/label object structure for distance units
   distances: { value: string; label: string }[]; 
   courses: string[];
 }
@@ -54,11 +51,21 @@ export default function LeaderboardsContent({
 
   const handleFilterChange = (key: keyof CurrentParams, value: string) => {
     const params = new URLSearchParams(window.location.search);
-    if (value && value !== 'any') {
+    
+    if (value) {
       params.set(key, value);
     } else {
       params.delete(key);
     }
+
+    //  Make Course and Distance mutually exclusive
+    if (key === 'course' && value) {
+      // Explicitly set distance to "any" so the server doesn't default back to "3"
+      params.set('distance', 'any');
+    } else if (key === 'distance' && value !== 'any') {
+      params.delete('course');
+    }
+
     params.set('page', '1');
     params.set('tab', 'leaderboards');
     router.push(`/records?${params.toString()}`, { scroll: false });
@@ -71,7 +78,6 @@ export default function LeaderboardsContent({
     router.push(`/records?${params.toString()}`, { scroll: false });
   };
 
-  // Easily reset the filters by just keeping the tab parameter
   const handleResetFilters = () => {
     router.push('/records?tab=leaderboards', { scroll: false });
   };
@@ -81,7 +87,7 @@ export default function LeaderboardsContent({
       
       {/* Header with Reset Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-foreground">Top Performances</h2>
+        <h2 className="text-2xl font-bold text-foreground">Team Leaderboards</h2>
         <Button size="sm" onClick={handleResetFilters}>
           Reset Filters
         </Button>
@@ -154,7 +160,7 @@ export default function LeaderboardsContent({
                 </span>
                 <RunnerAvatar src={row.AvatarURL} name={row.Name} size="md" />
                 <div>
-                  <p className="font-bold text-foreground group-hover:text-lisle-blue transition-colors">
+                  <p className="font-bold text-foreground group-hover:text-light-blue transition-colors">
                     {row.Name}
                   </p>
                   <p className="text-xs font-medium text-muted-foreground mt-0.5">
@@ -163,7 +169,7 @@ export default function LeaderboardsContent({
                   </p>
                 </div>
               </div>
-              <div className="font-heading text-xl font-extrabold text-lisle-blue">
+              <div className="font-heading text-xl font-extrabold text-foreground">
                 {formatRaceTime(row.Time)}
               </div>
             </Link>

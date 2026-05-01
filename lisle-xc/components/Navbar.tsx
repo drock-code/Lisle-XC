@@ -28,8 +28,6 @@ export const Navbar = () => {
     { name: 'Schedule', href: '/schedule' },
     { name: 'Results', href: '/results' },
     { name: 'Records', href: '/records' },
-    { name: 'View Runs', href: '/view-runs' },
-    { name: 'Sign In', href: '/sign-in' },
   ];
 
   return (

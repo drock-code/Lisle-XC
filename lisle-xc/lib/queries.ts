@@ -13,6 +13,18 @@ export interface CaptainRow extends RowDataPacket {
   AvatarURL: string | null;
 }
 
+export interface CourseRecordRow extends RowDataPacket {
+  CourseName: string;
+  Distance: string;
+  DistanceUnit: string;
+  Gender: string;
+  Grade: number;
+  RunnerKey: number;
+  RunnerName: string;
+  Time: string;
+  Date: string | Date;
+}
+
 export interface FAQRow extends RowDataPacket {
   Key: number;
   Order: number;
@@ -215,131 +227,150 @@ export interface TeamAwardRow extends RowDataPacket {
     return rows;
   }
 
-  // 3. Fetch the dynamic leaderboard
-export async function getDynamicLeaderboard(params: LeaderboardParams) {
-  let baseWhere = `WHERE r.Gender = ? AND rr.Time != '00:00:00'`;
-  const queryParams: (string | number)[] = [params.gender];
-
-  if (params.distance) {
-    // Filter by the Distance in the Route table
-    baseWhere += ` AND ro.Distance = ?`;
-    queryParams.push(params.distance);
-  }
-  if (params.course) {
-    baseWhere += ` AND ro.Name = ?`; 
-    queryParams.push(params.course);
-  }
-  if (params.grade) {
-    baseWhere += ` AND r.Grade = ?`;
-    queryParams.push(params.grade);
-  }
-
-  const query = `
-    WITH RankedResults AS (
-      SELECT 
-        r.Key as RunnerKey, 
-        r.Name, 
-        r.AvatarURL, 
-        rr.Time, 
-        ro.Name as Course, 
-        rr.Date,
-        ROW_NUMBER() OVER(PARTITION BY r.Key ORDER BY rr.Time ASC) as rn
-      FROM RunnerResult rr
-      JOIN Runner r ON rr.RunnerID = r.Key
-      /* FIX: Bridge through MeetRace to get the correct Route */
-      LEFT JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-      LEFT JOIN Route ro ON mr.RouteKey = ro.RouteKey
-      ${baseWhere}
-    )
-    SELECT * FROM RankedResults 
-    WHERE rn = 1
-    ORDER BY Time ASC
-    LIMIT ? OFFSET ?
-  `;
-
-  queryParams.push(params.limit, params.offset);
-
-  const [results] = await pool.query<DynamicLeaderboardRow[]>(query, queryParams);
   
-  const countQuery = `
-    SELECT COUNT(DISTINCT r.Key) as total
-    FROM RunnerResult rr
-    JOIN Runner r ON rr.RunnerID = r.Key
-    /* FIX: Make sure the count query uses the same bridge! */
-    LEFT JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-    LEFT JOIN Route ro ON mr.RouteKey = ro.RouteKey 
-    ${baseWhere}
-  `;
-  
-  const countParams = queryParams.slice(0, -2); 
-  const [countResult] = await pool.query<CountRow[]>(countQuery, countParams);
-  
-  return {
-    results,
-    totalCount: countResult[0].total
-  };
-}
+  export async function getDynamicLeaderboard(params: LeaderboardParams) {
+    let baseWhere = `WHERE r.Gender = ? AND rr.Time != '00:00:00'`;
+    const queryParams: (string | number)[] = [params.gender];
 
-// 4. Fetch unique options to populate our Select dropdowns
-export async function getLeaderboardOptions() {
-  // Add ro.DistanceUnit to the SELECT statement
-  const [distances] = await pool.query<DistanceOptionRow[]>(
-    `SELECT DISTINCT ro.Distance, ro.DistanceUnit 
-     FROM RunnerResult rr
-     JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-     JOIN Route ro ON mr.RouteKey = ro.RouteKey
-     WHERE ro.Distance IS NOT NULL 
-     ORDER BY ro.Distance ASC`
-  );
-  
-  const [courses] = await pool.query<CourseOptionRow[]>(
-    `SELECT DISTINCT ro.Name as Course 
-     FROM RunnerResult rr
-     JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-     JOIN Route ro ON mr.RouteKey = ro.RouteKey
-     WHERE ro.Name IS NOT NULL 
-     ORDER BY ro.Name ASC`
-  );
-  
-  return {
-    // Map this to an object with a value AND a label
-    distances: distances.map(d => ({
-      value: Number(d.Distance).toString(),
-      // Fallback to 'Miles' if the database has a blank/null unit
-      label: `${Number(d.Distance)} ${d.DistanceUnit || 'Miles'}` 
-    })),
-    courses: courses.map(c => c.Course)
-  };
-}
-
-  export async function getRecords() {
-    // 1. Fetch the Record rules
-    const [rules] = await pool.query<RecordRule[]>(`
-      SELECT * FROM Record ORDER BY Meet ASC, Distance ASC, Grade ASC, Gender ASC
-    `);
-
-    const records = [];
-
-    // 2. Fetch the Top X results for each record rule (Assuming records only list a runner's best time)
-    for (const rule of rules) {
-      const [results] = await pool.query<LeaderboardResult[]>(`
-        SELECT 
-          r.Key as RunnerID, r.Name as RunnerName, r.AvatarURL,
-          MIN(rr.Time) as Time
-        FROM RunnerResult rr
-        JOIN Runner r ON rr.RunnerID = r.Key
-        WHERE rr.MeetName = ? AND rr.Distance = ? AND r.Grade = ? AND r.Gender = ?
-        GROUP BY r.Key, r.Name, r.AvatarURL
-        ORDER BY Time ASC
-        LIMIT ?
-      `, [rule.Meet, rule.Distance, rule.Grade, rule.Gender, rule.MaxRunners]);
-
-      records.push({ rule, results });
+    if (params.distance) {
+      baseWhere += ` AND ro.Distance = ?`;
+      queryParams.push(params.distance);
+    }
+    if (params.course) {
+      baseWhere += ` AND ro.Name = ?`; 
+      queryParams.push(params.course);
+    }
+    if (params.grade) {
+      baseWhere += ` AND rr.Grade = ?`;
+      queryParams.push(params.grade);
     }
 
-    return records;
+    const query = `
+      WITH RankedResults AS (
+        SELECT 
+          r.Key as RunnerKey, 
+          r.Name, 
+          r.AvatarURL, 
+          rr.Time, 
+          ro.Name as Course, 
+          rr.Date,
+          ROW_NUMBER() OVER(PARTITION BY r.Key ORDER BY rr.Time ASC) as rn
+        FROM RunnerResult rr
+        JOIN Runner r ON rr.RunnerID = r.Key
+        LEFT JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+        LEFT JOIN Route ro ON mr.RouteKey = ro.RouteKey
+        ${baseWhere}
+      )
+      SELECT * FROM RankedResults 
+      WHERE rn = 1
+      ORDER BY Time ASC
+      LIMIT ? OFFSET ?
+    `;
+
+    queryParams.push(params.limit, params.offset);
+
+    const [results] = await pool.query<DynamicLeaderboardRow[]>(query, queryParams);
+    
+    const countQuery = `
+      SELECT COUNT(DISTINCT r.Key) as total
+      FROM RunnerResult rr
+      JOIN Runner r ON rr.RunnerID = r.Key
+      LEFT JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      LEFT JOIN Route ro ON mr.RouteKey = ro.RouteKey 
+      ${baseWhere}
+    `;
+    
+    const countParams = queryParams.slice(0, -2); 
+    const [countResult] = await pool.query<CountRow[]>(countQuery, countParams);
+    
+    return {
+      results,
+      totalCount: countResult[0].total
+    };
   }
 
+  // Fetch unique options to populate our Select dropdowns
+  export async function getLeaderboardOptions() {
+    const [distances] = await pool.query<DistanceOptionRow[]>(
+      `SELECT DISTINCT ro.Distance, ro.DistanceUnit 
+      FROM RunnerResult rr
+      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      JOIN Route ro ON mr.RouteKey = ro.RouteKey
+      WHERE ro.Distance IS NOT NULL 
+      ORDER BY ro.Distance ASC`
+    );
+    
+    const [courses] = await pool.query<CourseOptionRow[]>(
+      `SELECT DISTINCT ro.Name as Course 
+      FROM RunnerResult rr
+      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      JOIN Route ro ON mr.RouteKey = ro.RouteKey
+      WHERE ro.Name IS NOT NULL 
+      ORDER BY ro.Name ASC`
+    );
+    
+    return {
+      distances: distances.map(d => ({
+        value: Number(d.Distance).toString(),
+        // Fallback to 'Miles' if the database has a blank/null unit
+        label: `${Number(d.Distance)} ${d.DistanceUnit || 'Miles'}` 
+      })),
+      courses: courses.map(c => c.Course)
+    };
+  }
+
+  export async function getCourseRecords() {
+    const query = `
+      WITH MappedRoutes AS (
+        -- STEP 1: Intercept and unify the course names
+        SELECT 
+          CASE 
+            WHEN ro.Name IN ('Richard Spring Invite', 'IHSA 1A State') THEN ' Detweiller Park, Peoria'
+            WHEN ro.Name IN ('Joliet Central Steelmen Invite') THEN 'Channahon Community Park'
+            WHEN ro.Name IN ('SDEAA Conference Championship @ Jefferson', 'Jefferson') THEN 'Jefferson'
+            WHEN ro.Name IN ('Herscher Invite') THEN 'Limestone Park, Herscher'
+            WHEN ro.Name IN ('IHSA 1A Westmont Regional') THEN 'Westmont High School'
+            WHEN ro.Name IN ('ICE Conference') THEN 'Eastwood Golf Course, Streator'
+            WHEN ro.Name IN ('Yorkville Invite') THEN 'Hoover Forest Preserve, Yorkville'
+            WHEN ro.Name IN ('IESA State Championship') THEN ' Maxwell Park, Normal'
+            WHEN ro.Name IN ('IESA Sectional @ Bolingbrook Central Park') THEN 'Bolingbrook Central Park'
+            WHEN ro.Name IN ('Elmwood Park Tiger Invite') THEN 'Elmwood Park High School'
+            WHEN ro.Name IN ('SDEAA Conference Championship @ Community Park', 'Home Meet @ Community Park', 'IESA Sectional @ Community Park') THEN ' Lisle Community Park'
+            WHEN ro.Name IN ('Harvest Christian Academy Fall Classic', 'Harvest-Westminster Fall Classic') THEN 'Harvest-Westminster Academy, Elgin'
+            WHEN ro.Name IN ('IHSA 1A Bishop McNamara Regional', 'IHSA 1A Bishop McNamara Sectional') THEN 'Kankakee Country Club'
+            WHEN ro.Name IN ('Lisle Mane Event', 'Ken Jakalski Mane Event', 'IHSA 1A Lisle Regional', 'IHSA 1A Lisle Sectional') THEN '  Lisle Community Park'
+            ELSE ro.Name 
+          END as CourseName,
+          ro.Distance,
+          ro.DistanceUnit,
+          r.Gender,
+          rr.Grade,
+          r.Key as RunnerKey,
+          r.Name as RunnerName,
+          rr.Time,
+          rr.Date
+        FROM RunnerResult rr
+        JOIN Runner r ON rr.RunnerID = r.Key
+        JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+        JOIN Route ro ON mr.RouteKey = ro.RouteKey
+        WHERE rr.Time != '00:00:00' AND ro.Name IS NOT NULL
+        AND ro.Name NOT IN ('Jefferson (1 Mile)', 'Jane Addams (1 Mile)')
+      ),
+      RankedRecords AS (
+        -- STEP 2: Rank them using the newly unified CourseName
+        SELECT *,
+          ROW_NUMBER() OVER(PARTITION BY CourseName, Gender, Grade ORDER BY Time ASC) as rn
+        FROM MappedRoutes
+      )
+      -- STEP 3: Return only the #1 times
+      SELECT * FROM RankedRecords 
+      WHERE rn = 1
+      ORDER BY CourseName ASC, Grade DESC;
+    `;
+
+    const [results] = await pool.query<CourseRecordRow[]>(query);
+    return results;
+  }
 
 /*************************** END OF RECORDS QUERIES *********************************/
 
