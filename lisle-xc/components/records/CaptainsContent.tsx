@@ -76,7 +76,7 @@ export default function CaptainsContent({ captains }: CaptainsContentProps) {
             return (
               <Link 
                 key={captain.Key || idx} 
-                href={`/runner/${captain.RunnerKey}-${generateSlug(captain.Name)}`} 
+                href={`/runners/${captain.RunnerKey}-${generateSlug(captain.Name)}`} 
                 className="group flex items-center space-x-4 p-4 rounded-2xl border border-border bg-light-blue-gray/10 hover:bg-light-blue-gray/30 hover:border-light-blue/50 transition-all cursor-pointer shadow-sm hover:shadow"
               >
                 {CardContent}

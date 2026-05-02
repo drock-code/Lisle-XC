@@ -76,7 +76,7 @@ export const Navbar = () => {
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search runners..." 
+                placeholder="Search..." 
                 className="bg-transparent text-white text-xs focus:outline-none w-24 xl:w-40 font-body placeholder-gray-400"
               />
               <button 

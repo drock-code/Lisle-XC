@@ -1,51 +1,14 @@
-"use client";
-
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '@/components/Button';
+import { getNewsPostByPage } from '@/lib/queries';
+import { generateSlug } from '@/lib/utils';
 
-interface NoteData {
-  Key: number;
-  Date: string;
-  Title: string;
-  Note: string;
-  Image: string | null;
-}
+export default async function News({ page }: { page: number }) {
+  const { post, totalPages } = await getNewsPostByPage(page);
 
-export default function News() {
-  const [post, setPost] = useState<NoteData | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // State to track if the post is expanded or truncated
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  useEffect(() => {
-    const fetchNews = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/news?page=${page}`);
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        const data = await response.json();
-        setPost(data.post);
-        setTotalPages(data.totalPages);
-        
-        // Reset the expanded state every time we load a new page
-        setIsExpanded(false); 
-      } catch (error) {
-        console.error("Error loading news:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchNews();
-  }, [page]);
-
-  const handleNewer = () => setPage((prev) => Math.max(prev - 1, 1));
-  const handleOlder = () => setPage((prev) => Math.min(prev + 1, totalPages));
+  const prevPage = Math.max(page - 1, 1);
+  const nextPage = Math.min(page + 1, totalPages);
 
   return (
     <div className="lg:col-span-2 space-y-8">
@@ -53,11 +16,7 @@ export default function News() {
         
         {/* Main Article Content */}
         <div className="min-h-75 flex flex-col justify-center">
-          {isLoading ? (
-            <div className="p-8 md:p-12 text-center text-light-gray font-medium animate-pulse">
-              Loading latest update...
-            </div>
-          ) : post ? (
+          {post ? (
             <div className="p-8 md:p-12">
               <div className="flex items-center space-x-2 text-light-blue font-bold tracking-widest uppercase text-xs mb-4">
                 <span className="w-8 h-0.5 bg-light-blue"></span>
@@ -70,14 +29,15 @@ export default function News() {
                 {post.Title}
               </h2>
               
+              {/* Force the line-clamp here to preview the text */}
               <div 
-                className={`font-body text-foreground leading-relaxed text-lg mb-8 ${!isExpanded ? 'line-clamp-4' : ''}`}
+                className="font-body text-foreground leading-relaxed text-lg mb-8 line-clamp-4"
                 dangerouslySetInnerHTML={{ __html: post.Note }}
               />
               
-              <Button onClick={() => setIsExpanded(!isExpanded)}>
-                {isExpanded ? 'Show Less' : 'Read Full Story'}
-              </Button>
+              <Link href={`/notes/${post.Key}-${generateSlug(post.Title)}?fromPage=${page}`}>
+                <Button>Read Full Story</Button>
+              </Link>
             </div>
           ) : (
             <div className="p-8 md:p-12 text-center text-light-gray font-medium">
@@ -86,27 +46,37 @@ export default function News() {
           )}
         </div>
 
-        {/* Pagination Container */}
+        {/* URL-Based Pagination Container */}
         <div className="flex justify-between items-center px-8 py-4 md:px-12 border-t border-border bg-background/50">
-          <button 
-            onClick={handleOlder}
-            disabled={page >= totalPages}
-            className={`flex items-center space-x-2 font-bold uppercase tracking-tighter transition-colors
-              ${page >= totalPages ? 'text-light-gray cursor-not-allowed' : 'text-foreground hover:text-light-blue cursor-pointer'}`}
-          >
-            <ChevronLeft size={20} />
-            <span>Older Posts</span>
-          </button>
+          {page >= totalPages ? (
+            <div className="flex items-center space-x-2 font-bold uppercase tracking-tighter text-light-gray cursor-not-allowed">
+              <ChevronLeft size={20} />
+              <span>Older Posts</span>
+            </div>
+          ) : (
+            <Link 
+              href={`/?page=${nextPage}`} scroll={false}
+              className="flex items-center space-x-2 font-bold uppercase tracking-tighter text-foreground hover:text-light-blue transition-colors"
+            >
+              <ChevronLeft size={20} />
+              <span>Older Posts</span>
+            </Link>
+          )}
 
-          <button 
-            onClick={handleNewer}
-            disabled={page === 1}
-            className={`flex items-center space-x-2 font-bold uppercase tracking-tighter transition-colors
-              ${page === 1 ? 'text-light-gray cursor-not-allowed' : 'text-foreground hover:text-light-blue cursor-pointer'}`}
-          >
-            <span>Newer Posts</span>
-            <ChevronRight size={20} />
-          </button>
+          {page === 1 ? (
+            <div className="flex items-center space-x-2 font-bold uppercase tracking-tighter text-light-gray cursor-not-allowed">
+              <span>Newer Posts</span>
+              <ChevronRight size={20} />
+            </div>
+          ) : (
+            <Link 
+              href={`/?page=${prevPage}`} scroll={false}
+              className="flex items-center space-x-2 font-bold uppercase tracking-tighter text-foreground hover:text-light-blue transition-colors"
+            >
+              <span>Newer Posts</span>
+              <ChevronRight size={20} />
+            </Link>
+          )}
         </div>
         
       </section>

@@ -84,6 +84,13 @@ export interface NoteRow extends RowDataPacket {
   Image: string | null;
 }
 
+export interface NoteSearchResult extends RowDataPacket {
+  Key: number;
+  Title: string;
+  Note: string;
+  Date: string;
+}
+
 export interface RecordRule extends RowDataPacket {
   Key: number;
   Meet: string;
@@ -170,22 +177,36 @@ export interface TeamAwardRow extends RowDataPacket {
 /*************************** END OF FAQ QUERIES *********************************/
 
 /*************************** NEWS QUERIES *********************************/
-  // Get the total number of news posts (used for calculating total pages)
-  export async function getTotalNewsCount() {
-    const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT COUNT(*) as total FROM Note'
-    );
-    return rows[0].total as number;
-  }
+  export async function getNewsPostByPage(pageNumber: number) {
+    const limit = 1;
+    const offset = (pageNumber - 1) * limit;
 
-  // Fetch a specific page of news posts
-  export async function getNewsPosts(limit: number, offset: number) {
-    const [rows] = await pool.query<NoteRow[]>(
+    // Get the single post for this page
+    const [posts] = await pool.query<RowDataPacket[]>(
       'SELECT `Key`, `Date`, `Title`, `Note`, `Image` FROM Note ORDER BY `Date` DESC LIMIT ? OFFSET ?',
       [limit, offset]
     );
-    
-    return rows;
+
+    // Get the total count for pagination
+    const [countResult] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as total FROM Note'
+    );
+
+    const totalPosts = countResult[0].total;
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    return {
+      post: posts[0] || null,
+      totalPages,
+    };
+  }
+
+  export async function getNoteByKey(key: number) {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT `Key`, `Date`, `Title`, `Note`, `Image` FROM Note WHERE `Key` = ?',
+      [key]
+    );
+    return rows[0] || null;
   }
 /*************************** END OF NEWS QUERIES *********************************/
 
@@ -594,14 +615,23 @@ export interface TeamAwardRow extends RowDataPacket {
 /*************************** END OF SCHEDULE QUERIES *********************************/
 
 /*************************** SEARCH QUERIES *********************************/
-  export async function searchRunners(searchTerm: string) {
-    const searchPattern = `%${searchTerm}%`;
+  export async function searchAll(searchTerm: string) {
+  const searchPattern = `%${searchTerm}%`;
 
-    const [rows] = await pool.query<RunnerProfileRow[]>(
+  const [runnerResults, noteResults] = await Promise.all([
+    pool.query<RunnerProfileRow[]>(
       'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Name` LIKE ? ORDER BY `Name` ASC LIMIT 50',
       [searchPattern]
-    );
+    ),
+    pool.query<NoteSearchResult[]>(
+      'SELECT `Key`, `Title`, `Note`, `Date` FROM Note WHERE `Title` LIKE ? OR `Note` LIKE ? ORDER BY `Date` DESC, `Title` ASC LIMIT 50',
+      [searchPattern, searchPattern]
+    )
+  ]);
 
-    return rows;
-  }
+  return {
+    runners: runnerResults[0],
+    notes: noteResults[0]
+  };
+}
 /*************************** END OF SEARCH QUERIES *********************************/
