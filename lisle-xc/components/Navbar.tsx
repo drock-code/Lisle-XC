@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Search, Menu, X } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation'; 
 import Link from 'next/link';
+import Image from 'next/image';
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -12,38 +13,48 @@ export const Navbar = () => {
   const pathname = usePathname(); 
   const router = useRouter();
 
-  // Handle the search submission
   const handleSearch = (e: React.SyntheticEvent) => {
-    e.preventDefault(); // Prevent the page from reloading
+    e.preventDefault(); 
     
     if (searchQuery.trim()) {
-      // Redirect to the search page, encoding the string to handle spaces/special characters
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
   const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'FAQ', href: '/faq' }, 
     { name: 'Schedule', href: '/schedule' },
+    { name: 'FAQ', href: '/faq' }, 
     { name: 'Results', href: '/results' },
     { name: 'Records', href: '/records' },
+    { name: 'Runners', href: '/runners' },
   ];
 
   return (
     <nav className="bg-lisle-blue text-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           
           {/* Brand Logo */}
-          <div className="shrink-0 flex items-center group">
-            <Link href="/" className="flex flex-col">
-              <span className="font-heading font-bold text-xl md:text-2xl tracking-tighter uppercase leading-none">
-                Lisle
-              </span>
-              <span className="font-heading font-light text-xs md:text-sm tracking-[0.2em] uppercase leading-none text-light-blue">
-                Cross Country
-              </span>
+          <div className="shrink-0 flex items-center group h-full py-2">
+            <Link href="/" className="flex items-center gap-3 h-full">
+              <Image 
+                src="/lions.png" 
+                alt="Lisle Lions Logo" 
+                width={526}
+                height={160} 
+                priority 
+                className="h-full w-auto object-contain group-hover:brightness-110 transition-all" 
+              />
+              
+              <div className="flex flex-col justify-center">
+                <span className="font-heading font-bold text-xl md:text-2xl tracking-tighter uppercase leading-none">
+                  Lisle
+                </span>
+                <span className="font-heading font-light text-xs md:text-sm tracking-[0.2em] uppercase leading-none text-light-blue mt-1">
+                  Cross Country
+                </span>
+              </div>
             </Link>
           </div>
 
@@ -76,7 +87,7 @@ export const Navbar = () => {
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search runners..." 
+                placeholder="Search Site..." 
                 className="bg-transparent text-white text-xs focus:outline-none w-24 xl:w-40 font-body placeholder-gray-400"
               />
               <button 

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Select } from '@/components/Select';
+
 import RunnerAvatar from '@/components/RunnerAvatar';
+import { YearSelector } from '@/components/YearSelector';
 import { generateSlug } from '@/lib/utils';
 
 interface CaptainRow {
@@ -19,6 +21,8 @@ interface CaptainsContentProps {
 }
 
 export default function CaptainsContent({ captains }: CaptainsContentProps) {
+  const searchParams = useSearchParams();
+
   // Extract unique years from the captains array for the dropdown
   const years = useMemo(() => {
     const uniqueYears = Array.from(new Set(captains.map(c => c.Year)));
@@ -26,13 +30,14 @@ export default function CaptainsContent({ captains }: CaptainsContentProps) {
     return uniqueYears.sort((a, b) => b - a); 
   }, [captains]);
 
-  // Default to the most recent year
-  const [selectedYear, setSelectedYear] = useState<number>(years[0] || new Date().getFullYear());
+  // Read the year from the URL, or default to the most recent year if none exists
+  const yearParam = searchParams.get('year');
+  const activeYear = yearParam ? Number(yearParam) : (years[0] || new Date().getFullYear());
 
   // Filter the captains to only show those for the selected year
   const displayedCaptains = useMemo(() => {
-    return captains.filter(c => c.Year === selectedYear);
-  }, [captains, selectedYear]);
+    return captains.filter(c => c.Year === activeYear);
+  }, [captains, activeYear]);
 
   return (
     <div className="space-y-6">
@@ -43,16 +48,10 @@ export default function CaptainsContent({ captains }: CaptainsContentProps) {
         
         <div className="flex items-center space-x-3 bg-light-blue-gray/20 px-4 py-2 rounded-xl">
           <label htmlFor="captain-year-select" className="text-sm font-bold text-foreground">Season:</label>
-          <Select 
-            id="captain-year-select"
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="text-sm px-3 py-1.5 min-w-25"
-          >
-            {years.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </Select>
+          <YearSelector 
+            years={years} 
+            selectedYear={activeYear} 
+          />
         </div>
       </div>
 
@@ -76,7 +75,7 @@ export default function CaptainsContent({ captains }: CaptainsContentProps) {
             return (
               <Link 
                 key={captain.Key || idx} 
-                href={`/runner/${captain.RunnerKey}-${generateSlug(captain.Name)}`} 
+                href={`/runners/${captain.RunnerKey}-${generateSlug(captain.Name)}`} 
                 className="group flex items-center space-x-4 p-4 rounded-2xl border border-border bg-light-blue-gray/10 hover:bg-light-blue-gray/30 hover:border-light-blue/50 transition-all cursor-pointer shadow-sm hover:shadow"
               >
                 {CardContent}

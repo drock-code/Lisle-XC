@@ -4,6 +4,8 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
+import RichTextContent from "@/components/RichTextContent";
+
 interface GenericModalProps {
   title: React.ReactNode;      // The title in the modal header (allows text or icons)
   content: string;             // The raw HTML string to display inside
@@ -56,10 +58,9 @@ export default function GenericModal({
 
             {/* Modal Body */}
             <div className="p-6 max-h-[70vh] overflow-y-auto">
-              <div 
-                className="text-sm text-foreground leading-relaxed space-y-3 [&_a]:text-light-blue [&_a]:underline [&_a:hover]:text-foreground transition-colors"
-                dangerouslySetInnerHTML={{ __html: content }}
-                />
+              <div className="text-sm text-foreground leading-relaxed space-y-3 [&_a]:text-light-blue [&_a]:underline [&_a:hover]:text-foreground transition-colors">
+                <RichTextContent content={content} />
+              </div>
             </div>
           </div>
         </div>,

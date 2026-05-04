@@ -3,7 +3,6 @@ import { getRunnerProfile } from '@/lib/queries';
 import { processRunnerResults } from '@/lib/runner-utils';
 import RunnerDashboard from '@/components/RunnerDashboard';
 
-// Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const idStr = resolvedParams.slug.split('-')[0];
@@ -32,10 +31,16 @@ export default async function RunnerProfilePage({ params }: { params: Promise<{ 
   const data = await getRunnerProfile(runnerId);
   if (!data) notFound();
 
-  // Run the results through your new PR calculator logic
+  // Run the results through the PR calculator logic
   const processedResults = processRunnerResults(data.results);
 
   return (
-      <RunnerDashboard runner={data.runner} results={processedResults} />
+      <RunnerDashboard 
+      runner={data.runner} 
+      results={processedResults} 
+      awards={data.awards}             
+      captains={data.captains}         
+      courseRecords={data.courseRecords} 
+    />
   );
 }

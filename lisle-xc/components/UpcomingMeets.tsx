@@ -15,7 +15,9 @@ export default async function UpcomingMeets() {
         <h3 className="font-heading font-bold text-xl text-foreground uppercase tracking-wider">
           Upcoming Meets
         </h3>
-        <Calendar className="text-light-blue" size={20} />
+        <a href="https://calendar.google.com/calendar/u/3?cid=Y180YzljNTkyYTE3YmI4ZWVlZmQ4MmMwY2I4NzhlYjI3YmFkZjllY2M2NjA2MWZjZDE0NjJiMTNkYjE1Zjk5OTFmQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20" target="_blank" rel="noopener noreferrer">
+          <Calendar className="text-light-blue" size={20} />
+        </a>
       </div>
 
       <div className="space-y-8">

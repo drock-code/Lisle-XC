@@ -1,12 +1,10 @@
 import { Calendar, Clock, MapPin, Trophy } from 'lucide-react';
-import Link from 'next/link';
-
 import { getScheduleByYear, getAvailableYears, type MeetResult } from '@/lib/queries';
 import { formatTime } from '@/lib/time';
 
 import GenericModal from '@/components/GenericModal';
-import Button from '@/components/Button';
 import Pill from '@/components/Pill';
+import { YearSelector } from '@/components/YearSelector';
 
 export const metadata = {
   title: 'Season Schedule',
@@ -27,43 +25,19 @@ export default async function SchedulePage({searchParams}: {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
                     <div>
                         <h1 className="font-heading text-4xl font-extrabold text-lisle-blue tracking-tight drop-shadow-[0_2px_4px_rgba(255,255,255,0.6)]">Season Schedule</h1>
-                        <p className="font-body text-light-blue t-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">View upcoming meets and historical results.</p>
+                        <p className="font-body text-light-blue mt-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">View upcoming meets and historical results.</p>
                     </div>
           
-                {/* The Wrapper */}
-                <div className="relative w-full md:w-auto md:max-w-md lg:max-w-xl overflow-hidden flex items-center">
-                    {/* The Track */}
-                    <div className="flex gap-2 overflow-x-auto py-4 px-1 w-full snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden items-center">
-                        {years.map((year) => (
-                            <Link
-                                key={year}
-                                href={`/schedule?year=${year}`}
-                                className="shrink-0 snap-start"
-                            >
-                                <Button
-                                  size="sm"
-                                  isActive={activeYear === year}
-                                  className={activeYear !== year ? 'shadow-sm' : ''}
-                                >
-                                  {year}
-                                </Button>
-                            </Link>
-                        ))}
+                    <div className="w-full md:w-auto bg-white rounded-lg shadow-sm border border-border px-2 py-1">
+                       <YearSelector 
+                         years={years} 
+                         selectedYear={activeYear} 
+                       />
                     </div>
-
-                    {/* Visual Gradient Cues */}
-                    {years.length > 4 && (
-                        <>
-                            <div className="absolute right-0 top-0 bottom-0 w-12 bg-linear-to-l from-white/90 to-transparent pointer-events-none rounded-r-xl" />
-                            <div className="absolute left-0 top-0 bottom-0 w-4 bg-linear-to-r from-white/90 to-transparent pointer-events-none rounded-l-xl" />
-                        </>
-                    )}
                 </div>
-            </div>
 
         {/* The Responsive Data Container */}
         <div className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden">
-          
           {/* DESKTOP VIEW: Traditional Table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -93,14 +67,14 @@ export default async function SchedulePage({searchParams}: {
                     </td>
                     <td className="p-4 align-top">
                       <div className="flex items-center text-foreground">
-                        <Calendar className="w-4 h-4 mr-2 text-light-blue" />
+                        <Calendar className="w-4 h-4 mr-2 text-light-blue shrink-0" />
                         {new Date(meet.Date).toLocaleDateString('en-US', { 
                           month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' 
                         })}
                       </div>
                       {meet.Time && (
                         <div className="flex items-center text-sm mt-1">
-                          <Clock className="w-4 h-4 mr-2 text-light-blue" />
+                          <Clock className="w-4 h-4 mr-2 text-light-blue shrink-0" />
                           {formatTime(meet.Time)}
                         </div>
                       )}

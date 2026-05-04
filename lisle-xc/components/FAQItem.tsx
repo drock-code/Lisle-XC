@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+import RichTextContent from "@/components/RichTextContent";
+
 interface FAQ {
   Key: number;
   Title: string;
@@ -13,8 +15,30 @@ export default function FAQItem({ faqs }: { faqs: FAQ[] }) {
   const [openId, setOpenId] = useState<number | null>(null);
 
   const toggle = (id: number) => {
-    // If clicking the one that's already open, close it. Otherwise, open the new one.
     setOpenId(openId === id ? null : id);
+  };
+
+  // Intercept clicks on the container
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    
+    // Find if the clicked element (or its parent) is an <a> tag
+    const link = target.closest('a'); 
+
+    if (link) {
+      const href = link.getAttribute('href');
+      
+      // Check if it's an external link or a missing-protocol "www" link
+      if (href && (href.startsWith('http') || href.startsWith('www.'))) {
+        e.preventDefault(); // Stop the browser from navigating in the current tab
+        
+        // Fix "www" links on the fly, otherwise use the normal href
+        const finalHref = href.startsWith('www.') ? `https://${href}` : href;
+        
+        // Open safely in a new tab!
+        window.open(finalHref, '_blank', 'noopener,noreferrer');
+      }
+    }
   };
 
   return (
@@ -38,9 +62,6 @@ export default function FAQItem({ faqs }: { faqs: FAQ[] }) {
             />
           </button>
           
-          {/* We use a CSS grid trick to animate the accordion expanding! 
-            When open, the grid-template-rows becomes 1fr, opening the container.
-          */}
           <div 
             className={`grid transition-all duration-300 ease-in-out ${
               openId === faq.Key 
@@ -49,10 +70,13 @@ export default function FAQItem({ faqs }: { faqs: FAQ[] }) {
             }`}
           >
             <div className="overflow-hidden">
+              {/* Attach the click listener to the wrapper div */}
               <div 
                 className="p-5 pt-0 text-foreground leading-relaxed text-sm border-t border-border [&_a]:text-light-blue [&_a]:underline space-y-3"
-                dangerouslySetInnerHTML={{ __html: faq.Content }}
-              />
+                onClick={handleContentClick}
+              >
+                <RichTextContent content={faq.Content} />
+              </div>
             </div>
           </div>
         </div>
