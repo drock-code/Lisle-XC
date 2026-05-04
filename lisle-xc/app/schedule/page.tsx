@@ -93,14 +93,14 @@ export default async function SchedulePage({searchParams}: {
                     </td>
                     <td className="p-4 align-top">
                       <div className="flex items-center text-foreground">
-                        <Calendar className="w-4 h-4 mr-2 text-light-blue" />
+                        <Calendar className="w-4 h-4 mr-2 text-light-blue shrink-0" />
                         {new Date(meet.Date).toLocaleDateString('en-US', { 
                           month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' 
                         })}
                       </div>
                       {meet.Time && (
                         <div className="flex items-center text-sm mt-1">
-                          <Clock className="w-4 h-4 mr-2 text-light-blue" />
+                          <Clock className="w-4 h-4 mr-2 text-light-blue shrink-0" />
                           {formatTime(meet.Time)}
                         </div>
                       )}

@@ -24,10 +24,11 @@ export const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'FAQ', href: '/faq' }, 
     { name: 'Schedule', href: '/schedule' },
+    { name: 'FAQ', href: '/faq' }, 
     { name: 'Results', href: '/results' },
     { name: 'Records', href: '/records' },
+    { name: 'Runners', href: '/runners' },
   ];
 
   return (

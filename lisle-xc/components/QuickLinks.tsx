@@ -1,4 +1,5 @@
 import GenericModal from "@/components/GenericModal";
+import Link from "next/link";
 import { HelpCircle } from "lucide-react"; 
 import { getRandomFAQ } from "@/lib/queries";
 
@@ -14,17 +15,17 @@ export default async function QuickLinks() {
         {/* Static Links */}
         <li className="flex items-center space-x-3 group cursor-pointer">
           <div className="w-2 h-2 bg-light-blue rounded-full group-hover:scale-150 transition-transform shrink-0"></div>
-          <span className="font-body font-medium hover:text-light-blue transition-colors">Athlete Handbook</span>
+          <span className="font-body font-medium hover:text-light-blue transition-colors"><Link href="">Athlete Handbook</Link></span>
         </li>
         <li className="flex items-center space-x-3 group cursor-pointer">
           <div className="w-2 h-2 bg-light-blue rounded-full group-hover:scale-150 transition-transform shrink-0"></div>
-          <span className="font-body font-medium hover:text-light-blue transition-colors">Course Maps</span>
+          <span className="font-body font-medium hover:text-light-blue transition-colors"><Link href="/maps">Course Maps</Link></span>
         </li>
         <li className="flex items-center space-x-3 group cursor-pointer">
           <div className="w-2 h-2 bg-light-blue rounded-full group-hover:scale-150 transition-transform shrink-0"></div>
-          <span className="font-body font-medium hover:text-light-blue transition-colors">Travel Info</span>
+          <span className="font-body font-medium hover:text-light-blue transition-colors"><Link href="/travel">Travel Info</Link></span>
         </li>
-
+        <hr/>
         {/* Dynamic Random FAQ Link */}
         {randomFaq && (
           <li>
@@ -49,7 +50,7 @@ export default async function QuickLinks() {
               } 
               triggerClassName="group w-full"
             />
-            <p>View More Tips on the <a href="/faq" className="text-light-blue hover:underline">FAQ Page</a></p>
+            <p>View More Tips on the <Link href="/faq" className="text-light-blue hover:underline">FAQ Page</Link></p>
           </li>
         )}
       </ul>
