@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { TabGroup, Tab } from '@/components/Tabs';
 import RunnerAvatar from '@/components/RunnerAvatar';
-import { Select } from '@/components/Select';
+import { YearSelector } from '@/components/YearSelector';
 
 import { TeamAwardRow, RunnerAwardRow } from '@/lib/queries';
 import { generateSlug } from '@/lib/utils';
@@ -19,15 +18,7 @@ interface AwardsContentProps {
 }
 
 export default function AwardsContent({ years, activeYear, teamAwards, runnerAwards }: AwardsContentProps) {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'individual' | 'team'>('individual');
-
-  // When the user changes the year, we update the URL. 
-  // The server will automatically re-fetch and pass down the new data
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newYear = e.target.value;
-    router.push(`/records?tab=awards&year=${newYear}`, { scroll: false });
-  };
 
   return (
     <div className="space-y-6">
@@ -37,16 +28,12 @@ export default function AwardsContent({ years, activeYear, teamAwards, runnerAwa
         
         <div className="flex items-center space-x-3 bg-light-blue-gray/20 px-4 py-2 rounded-xl">
           <label htmlFor="year-select" className="text-sm font-bold text-foreground">Season:</label>
-          <Select 
-            id="year-select"
-            value={activeYear} 
-            onChange={handleYearChange}
-            className="text-sm px-3 py-1.5"
-          >
-            {years.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </Select>
+          
+          <YearSelector 
+            years={years} 
+            selectedYear={activeYear} 
+          />
+          
         </div>
       </div>
 
@@ -74,7 +61,6 @@ export default function AwardsContent({ years, activeYear, teamAwards, runnerAwa
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {runnerAwards.length > 0 ? (
               runnerAwards.map((award) => {
-                // The visual contents of the card
                 const CardContent = (
                   <>
                     <RunnerAvatar src={award.AvatarURL} name={award.Name} size="md" />

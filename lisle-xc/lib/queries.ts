@@ -1,6 +1,25 @@
 import { pool } from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
+const COURSE_NAME_MAPPING = `
+  CASE 
+    WHEN ro.Name IN ('Richard Spring Invite', 'IHSA 1A State') THEN ' Detweiller Park, Peoria'
+    WHEN ro.Name IN ('Joliet Central Steelmen Invite') THEN 'Channahon Community Park'
+    WHEN ro.Name IN ('SDEAA Conference Championship @ Jefferson', 'Jefferson') THEN 'Jefferson'
+    WHEN ro.Name IN ('Herscher Invite') THEN 'Limestone Park, Herscher'
+    WHEN ro.Name IN ('IHSA 1A Westmont Regional') THEN 'Westmont High School'
+    WHEN ro.Name IN ('ICE Conference') THEN 'Eastwood Golf Course, Streator'
+    WHEN ro.Name IN ('Yorkville Invite') THEN 'Hoover Forest Preserve, Yorkville'
+    WHEN ro.Name IN ('IESA State Championship') THEN ' Maxwell Park, Normal'
+    WHEN ro.Name IN ('IESA Sectional @ Bolingbrook Central Park') THEN 'Bolingbrook Central Park'
+    WHEN ro.Name IN ('Elmwood Park Tiger Invite') THEN 'Elmwood Park High School'
+    WHEN ro.Name IN ('SDEAA Conference Championship @ Community Park', 'Home Meet @ Community Park', 'IESA Sectional @ Community Park', 'Lisle Mane Event', 'Ken Jakalski Mane Event', 'IHSA 1A Lisle Regional', 'IHSA 1A Lisle Sectional') THEN '  Lisle Community Park'
+    WHEN ro.Name IN ('Harvest Christian Academy Fall Classic', 'Harvest-Westminster Fall Classic') THEN 'Harvest-Westminster Academy, Elgin'
+    WHEN ro.Name IN ('IHSA 1A Bishop McNamara Regional', 'IHSA 1A Bishop McNamara Sectional') THEN 'Kankakee Country Club'
+    ELSE ro.Name 
+  END
+`;
+
 export interface AwardYear extends RowDataPacket {
   Year: number;
 }
@@ -232,7 +251,7 @@ export interface TeamAwardRow extends RowDataPacket {
       FROM RunnerAward ra
       LEFT JOIN Runner r ON ra.RunnerKey = r.Key
       WHERE ra.Year = ?
-      ORDER BY ra.Award ASC
+      ORDER BY ra.Award ASC, r.Name ASC
     `, [year]);
 
     return { teamAwards, runnerAwards };
@@ -247,7 +266,6 @@ export interface TeamAwardRow extends RowDataPacket {
     `);
     return rows;
   }
-
   
   export async function getDynamicLeaderboard(params: LeaderboardParams) {
     let baseWhere = `WHERE r.Gender = ? AND rr.Time != '00:00:00'`;
@@ -343,25 +361,8 @@ export interface TeamAwardRow extends RowDataPacket {
   export async function getCourseRecords() {
     const query = `
       WITH MappedRoutes AS (
-        -- STEP 1: Intercept and unify the course names
         SELECT 
-          CASE 
-            WHEN ro.Name IN ('Richard Spring Invite', 'IHSA 1A State') THEN ' Detweiller Park, Peoria'
-            WHEN ro.Name IN ('Joliet Central Steelmen Invite') THEN 'Channahon Community Park'
-            WHEN ro.Name IN ('SDEAA Conference Championship @ Jefferson', 'Jefferson') THEN 'Jefferson'
-            WHEN ro.Name IN ('Herscher Invite') THEN 'Limestone Park, Herscher'
-            WHEN ro.Name IN ('IHSA 1A Westmont Regional') THEN 'Westmont High School'
-            WHEN ro.Name IN ('ICE Conference') THEN 'Eastwood Golf Course, Streator'
-            WHEN ro.Name IN ('Yorkville Invite') THEN 'Hoover Forest Preserve, Yorkville'
-            WHEN ro.Name IN ('IESA State Championship') THEN ' Maxwell Park, Normal'
-            WHEN ro.Name IN ('IESA Sectional @ Bolingbrook Central Park') THEN 'Bolingbrook Central Park'
-            WHEN ro.Name IN ('Elmwood Park Tiger Invite') THEN 'Elmwood Park High School'
-            WHEN ro.Name IN ('SDEAA Conference Championship @ Community Park', 'Home Meet @ Community Park', 'IESA Sectional @ Community Park') THEN ' Lisle Community Park'
-            WHEN ro.Name IN ('Harvest Christian Academy Fall Classic', 'Harvest-Westminster Fall Classic') THEN 'Harvest-Westminster Academy, Elgin'
-            WHEN ro.Name IN ('IHSA 1A Bishop McNamara Regional', 'IHSA 1A Bishop McNamara Sectional') THEN 'Kankakee Country Club'
-            WHEN ro.Name IN ('Lisle Mane Event', 'Ken Jakalski Mane Event', 'IHSA 1A Lisle Regional', 'IHSA 1A Lisle Sectional') THEN '  Lisle Community Park'
-            ELSE ro.Name 
-          END as CourseName,
+          ${COURSE_NAME_MAPPING} as CourseName,
           ro.Distance,
           ro.DistanceUnit,
           r.Gender,
@@ -378,12 +379,12 @@ export interface TeamAwardRow extends RowDataPacket {
         AND ro.Name NOT IN ('Jefferson (1 Mile)', 'Jane Addams (1 Mile)')
       ),
       RankedRecords AS (
-        -- STEP 2: Rank them using the newly unified CourseName
+        -- Rank routes using the newly unified CourseName
         SELECT *,
           ROW_NUMBER() OVER(PARTITION BY CourseName, Gender, Grade ORDER BY Time ASC) as rn
         FROM MappedRoutes
       )
-      -- STEP 3: Return only the #1 times
+      -- Return only the #1 times
       SELECT * FROM RankedRecords 
       WHERE rn = 1
       ORDER BY CourseName ASC, Grade DESC;
@@ -515,27 +516,27 @@ export interface TeamAwardRow extends RowDataPacket {
 
 /*************************** RUNNER PROFILE QUERIES *********************************/
   export async function getRunnerProfile(runnerId: number | string) {
-    // Fetch the basic runner information
-    const [runnerRows] = await pool.query<RunnerProfileRow[]>(
-      'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Key` = ?',
-      [runnerId]
-    );
+  // Fetch the basic runner information first
+  const [runnerRows] = await pool.query<RunnerProfileRow[]>(
+    'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Key` = ?',
+    [runnerId]
+  );
 
-    if (runnerRows.length === 0) {
-      return null;
-    }
+  if (runnerRows.length === 0) {
+    return null;
+  }
 
-    // Fetch all of their historical race results
-    const [resultRows] = await pool.query<RunnerResultRow[]>(
+  // Fetch all related data concurrently
+  const [
+    [resultRows],
+    [awardRows],
+    [captainRows],
+    [crRows]
+  ] = await Promise.all([
+    // Race Results
+    pool.query<RunnerResultRow[]>(
       `SELECT 
-          m.Name AS MeetName,
-          m.Date,
-          m.Season,
-          rt.Distance,
-          rt.DistanceUnit,
-          rr.Time,
-          rr.Grade,
-          mr.JH
+          m.Name AS MeetName, m.Date, m.Season, rt.Distance, rt.DistanceUnit, rr.Time, rr.Grade, mr.JH
       FROM RunnerResult rr
       JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
       JOIN Meet m ON mr.MeetID = m.MeetKey
@@ -543,12 +544,75 @@ export interface TeamAwardRow extends RowDataPacket {
       WHERE rr.RunnerID = ? AND rr.Time != '00:00:00'
       ORDER BY m.Date ASC`,
       [runnerId]
-    );
+    ),
+    // Awards
+    pool.query<RunnerAwardRow[]>(
+      `SELECT Award, Year, IsJH FROM RunnerAward WHERE RunnerKey = ? ORDER BY Year DESC, Award ASC`,
+      [runnerId]
+    ),
+    // Captain
+    pool.query<CaptainRow[]>(
+      `SELECT Year FROM Captain WHERE RunnerKey = ? ORDER BY Year DESC`,
+      [runnerId]
+    ),
+    // Course Records
+    pool.query<CourseRecordRow[]>(
+      `WITH MappedRoutes AS (
+        SELECT 
+          ${COURSE_NAME_MAPPING} as CourseName, r.Gender, rr.Grade, r.Key as RunnerKey, rr.Time
+        FROM RunnerResult rr
+        JOIN Runner r ON rr.RunnerID = r.Key
+        JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+        JOIN Route ro ON mr.RouteKey = ro.RouteKey
+        WHERE rr.Time != '00:00:00' AND ro.Name IS NOT NULL
+        AND ro.Name NOT IN ('Jefferson (1 Mile)', 'Jane Addams (1 Mile)')
+      ),
+      RankedRecords AS (
+        SELECT *, ROW_NUMBER() OVER(PARTITION BY CourseName, Gender, Grade ORDER BY Time ASC) as rn
+        FROM MappedRoutes
+      )
+      SELECT CourseName, Grade, Time FROM RankedRecords 
+      WHERE rn = 1 AND RunnerKey = ?
+      ORDER BY Grade DESC, CourseName ASC;`,
+      [runnerId]
+    )
+  ]);
 
-    return {
-      runner: runnerRows[0],
-      results: resultRows
-    };
+  return {
+    runner: runnerRows[0],
+    results: resultRows,
+    awards: awardRows,
+    captains: captainRows,
+    courseRecords: crRows
+  };
+}
+
+  export async function getRosterYears(): Promise<number[]> {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT DISTINCT Season FROM Meet ORDER BY Season DESC'
+    );
+    return rows.map(r => r.Season);
+  }
+
+  export async function getRoster(year: number, level: 'HS' | 'JH') {
+    const isJH = level === 'JH' ? 1 : 0;
+    
+    const [rows] = await pool.query<RunnerProfileRow[]>(`
+      SELECT DISTINCT 
+        r.Key, 
+        r.Name, 
+        r.AvatarURL, 
+        r.Gender,
+        rr.Grade
+      FROM Runner r
+      JOIN RunnerResult rr ON r.Key = rr.RunnerID
+      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      JOIN Meet m ON mr.MeetID = m.MeetKey
+      WHERE m.Season = ? AND rr.JH = ?
+      ORDER BY rr.Grade DESC, r.Name ASC
+    `, [year, isJH]);
+
+    return rows;
   }
 /*************************** END OF RUNNER PROFILE QUERIES *********************************/
 

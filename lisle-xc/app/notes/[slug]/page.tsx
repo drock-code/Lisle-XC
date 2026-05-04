@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Home } from 'lucide-react';
+
 import { getNoteByKey } from '@/lib/queries';
 import Button from '@/components/Button';
+import RichTextContent from '@/components/RichTextContent';
 
-// Metadata generation stays the same
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const key = parseInt(resolvedParams.slug.split('-')[0], 10);
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const plainTextDescription = note.Note.replace(/<[^>]+>/g, '').substring(0, 160) + '...';
 
   return {
-    title: `${note.Title} | Lisle XC`,
+    title: `${note.Title} | Lisle Cross Country`,
     description: plainTextDescription,
   };
 }
@@ -74,10 +75,9 @@ export default async function NotePage({
             </h1>
           </header>
 
-          <div 
-            className="font-body text-foreground leading-relaxed text-lg prose prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: note.Note }}
-          />
+          <div className="font-body text-foreground leading-relaxed text-lg prose prose-invert max-w-none">
+            <RichTextContent content={note.Note} />
+          </div>
         </div>
 
         <div className="px-8 md:px-12 py-8 border-t border-border bg-black/20 text-center flex flex-col items-center justify-center gap-4">

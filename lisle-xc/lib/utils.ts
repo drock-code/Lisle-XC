@@ -6,6 +6,19 @@ export const generateSlug = (name: string) => {
     .replace(/^-+|-+$/g, '');    // Clean up any leading or trailing hyphens
 };
 
+export const getGradeName = (grade: number) => {
+  const map: Record<number, string> = {
+    12: "Seniors",
+    11: "Juniors",
+    10: "Sophomores",
+    9: "Freshmen",
+    8: "8th Grade",
+    7: "7th Grade",
+    6: "6th Grade",
+  };
+  return map[grade] || `Grade ${grade}`;
+};
+
 export const timeToSeconds = (timeStr: string) => {
   const parts = timeStr.split(':').map(Number);
   if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];

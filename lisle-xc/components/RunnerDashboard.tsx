@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { Calendar, Map, Activity, ChevronDown } from 'lucide-react';
+import { Calendar, Map, Activity, ChevronDown, Award, Star, Trophy } from 'lucide-react';
 
 import { PerformanceChart } from '@/components/PerformanceChart';
 import { TabGroup, Tab } from '@/components/Tabs';
@@ -9,13 +9,16 @@ import { LifetimePRIcon, SeasonPRIcon } from '@/components/Icons';
 import RunnerAvatar from '@/components/RunnerAvatar';
 import {Select} from '@/components/Select';
 
-import type { RunnerProfileRow } from '@/lib/queries';
+import type { RunnerProfileRow, RunnerAwardRow, CaptainRow, CourseRecordRow } from '@/lib/queries';
 import { timeToSeconds, secondsToTime, getDistanceInMiles } from '@/lib/utils';
 import type { ProcessedResult } from '@/lib/runner-utils';
 
 interface RunnerDashboardProps {
   runner: RunnerProfileRow;
   results: ProcessedResult[];
+  awards: RunnerAwardRow[];
+  captains: CaptainRow[];
+  courseRecords: CourseRecordRow[];
 }
 
 interface ChartableResult extends ProcessedResult {
@@ -26,7 +29,14 @@ interface ChartableResult extends ProcessedResult {
   DisplayTime: string;
 }
 
-export default function RunnerDashboard({ runner, results }: RunnerDashboardProps) {
+export default function RunnerDashboard({ 
+  runner, 
+  results, 
+  awards = [],         // <-- Add = []
+  captains = [],       // <-- Add = []
+  courseRecords = []   // <-- Add = []
+}: RunnerDashboardProps) {
+  // ... (keep all your existing useMemo hooks for charts and PRs) ...
   // Check if the runner has records for each level
   const hasHS = results.some(r => r.JH !== 1);
   const hasJH = results.some(r => r.JH === 1);
@@ -96,28 +106,60 @@ export default function RunnerDashboard({ runner, results }: RunnerDashboardProp
       
       {/* Header Section */}
       <div className="bg-background rounded-4xl p-6 md:p-10 shadow-sm border border-border flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-          <RunnerAvatar 
-          src={runner.AvatarURL} 
-          name={runner.Name} 
-          size="lg" 
-        />
         
-        <div className="text-center md:text-left flex-1 w-full">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* 1. AVATAR WRAPPER (Now relative so the badge can overlay it) */}
+        <div className="relative shrink-0">
+          <RunnerAvatar 
+            src={runner.AvatarURL} 
+            name={runner.Name} 
+            size="lg" 
+          />
+          {/* The Floated Grade Badge */}
+          <span className="absolute -bottom-2 -left-2 flex items-center gap-1.5 bg-light-blue-gray text-lisle-blue border border-border px-3 py-1 rounded-full text-xs font-bold shadow-md z-10 whitespace-nowrap">
+            <Calendar size={14} /> Grade {runner.Grade}
+          </span>
+        </div>
+        
+        <div className="text-center md:text-left flex-1 w-full mt-2 md:mt-0">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
-              <h1 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight mb-4">
                 {runner.Name}
               </h1>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3 text-lisle-blue font-medium">
-                <span className="flex items-center gap-1 bg-light-blue-gray px-3 py-1 rounded-full text-sm">
-                  <Calendar size={16} /> Grade {runner.Grade}
-                </span>
+              
+              {/* ACCOLADES & BADGES WRAPPER (Grade pill removed from here) */}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+
+                {/* Captain Badges */}
+                {captains?.map((cap) => (
+                  <span key={cap.Year} className="flex items-center gap-1.5 bg-background border border-border text-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
+                    <Star size={14} className="text-amber-500 fill-amber-500" /> 
+                    Captain ({cap.Year})
+                  </span>
+                ))}
+
+                {/* Award Badges */}
+                {awards?.map((awd, idx) => (
+                  <span key={idx} className="flex items-center gap-1.5 bg-background border border-border text-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
+                    <Award size={14} className="text-light-blue" /> 
+                    {awd.Award} ({awd.Year})
+                  </span>
+                ))}
+
+                {/* Course Record Badges */}
+                {courseRecords?.map((cr, idx) => (
+                  <span key={idx} className="flex items-center gap-1.5 bg-background border border-border text-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
+                    <Trophy size={14} className="text-emerald-500" /> 
+                    Grade {cr.Grade} CR: {cr.CourseName}
+                  </span>
+                ))}
+
               </div>
             </div>
             
             {/* Level Tabs - Only show if the runner has BOTH levels */}
             {(hasHS && hasJH) && (
-              <TabGroup className="md:w-auto">
+              <TabGroup className="md:w-auto mt-4 md:mt-0">
                 <Tab 
                   onClick={() => setActiveTab('HS')} 
                   label="High School" 
