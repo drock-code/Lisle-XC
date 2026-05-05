@@ -15,7 +15,7 @@ export default async function QuickLinks() {
         {/* Static Links */}
         <li className="flex items-center space-x-3 group cursor-pointer">
           <div className="w-2 h-2 bg-light-blue rounded-full group-hover:scale-150 transition-transform shrink-0"></div>
-          <span className="font-body font-medium hover:text-light-blue transition-colors"><Link href="">Athlete Handbook</Link></span>
+          <span className="font-body font-medium hover:text-light-blue transition-colors"><Link href="/files/athleteHandbook2026.pdf">Athlete Handbook</Link></span>
         </li>
         <li className="flex items-center space-x-3 group cursor-pointer">
           <div className="w-2 h-2 bg-light-blue rounded-full group-hover:scale-150 transition-transform shrink-0"></div>
