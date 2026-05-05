@@ -1,21 +1,28 @@
-import React from 'react';
+import React, { ElementType, ComponentPropsWithoutRef } from 'react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  size?: 'sm' | 'md' | 'lg'; 
+interface ButtonBaseProps {
+  size?: 'sm' | 'md' | 'lg';
   isActive?: boolean;
-  children: React.ReactNode; 
+  children: React.ReactNode;
+  className?: string; 
 }
 
-export default function Button({ 
-  size = 'md', 
+type ButtonProps<T extends ElementType> = ButtonBaseProps & {
+  as?: T;
+} & Omit<ComponentPropsWithoutRef<T>, keyof ButtonBaseProps | 'as'>;
+
+export default function Button<T extends ElementType = 'button'>({
+  size = 'md',
   isActive = false,
-  children, 
+  children,
   className = '', 
-  ...props 
-}: ButtonProps) {
+  as,
+  ...props
+}: ButtonProps<T>) {
   
-  // Base classes (Layout, sizing, and transitions only - no colors!)
-  const baseClasses = "rounded-full font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer";
+  const Tag: ElementType = as || 'button';
+
+  const baseClasses = "rounded-full font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer inline-flex items-center justify-center text-center";
 
   const sizeClasses = {
     sm: "px-6 py-2 text-xs",
@@ -23,17 +30,18 @@ export default function Button({
     lg: "px-10 py-4 text-base",
   };
 
-  // Apply colors strictly based on whether the button is active
   const colorClasses = isActive 
     ? "bg-white text-lisle-blue scale-105 shadow-md hover:bg-blue-50 hover:shadow-lg" 
     : "bg-lisle-blue text-white hover:bg-light-blue shadow-lg shadow-lisle-blue/20";
 
+  const combinedClasses = `${baseClasses} ${sizeClasses[size]} ${colorClasses} ${className}`;
+
   return (
-    <button 
-      className={`${baseClasses} ${sizeClasses[size]} ${colorClasses} ${className}`}
+    <Tag 
+      className={combinedClasses}
       {...props}
     >
       {children}
-    </button>    
+    </Tag>    
   );
 }
