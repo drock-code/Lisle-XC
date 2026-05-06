@@ -32,6 +32,16 @@ export interface CaptainRow extends RowDataPacket {
   AvatarURL: string | null;
 }
 
+export interface CourseMapRow {
+  Id: number;
+  Name: string;
+  Location: string;
+  FileName: string;
+  Description: string | null;
+  CreatedAt: Date;
+  UpdatedAt: Date;
+}
+
 export interface CourseRecordRow extends RowDataPacket {
   CourseName: string;
   Distance: string;
@@ -177,6 +187,22 @@ export interface TeamAwardRow extends RowDataPacket {
   TeamName: string;
   Award: string;
   Year: number;
+}
+
+export interface TravelInfoRow {
+  Id: number;
+  MeetName: string;
+  LocationName: string;
+  Address: string;
+  Parking: string | null;
+  Concessions: string | null;
+  GmapsLink: string | null;
+  CourseMapId: number | null;
+  
+  CourseMapFileName: string | null; 
+  
+  CreatedAt: Date;
+  UpdatedAt: Date;
 }
 
 /*************************** FAQ QUERIES *********************************/
@@ -699,3 +725,57 @@ export interface TeamAwardRow extends RowDataPacket {
   };
 }
 /*************************** END OF SEARCH QUERIES *********************************/
+
+
+export async function getCourseMaps(): Promise<CourseMapRow[]> {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        \`Id\`, 
+        \`Name\`, 
+        \`Location\`, 
+        \`FileName\`, 
+        \`Description\`, 
+        \`CreatedAt\`, 
+        \`UpdatedAt\`
+      FROM \`CourseMap\`
+      ORDER BY \`Name\` ASC
+    `);
+    
+    return rows as CourseMapRow[];
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch course maps data.');
+  }
+}
+
+/**
+ * Fetches travel information for all meets, including an optional 
+ * file name for an associated course map.
+ */
+export async function getTravelInfo(): Promise<TravelInfoRow[]> {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        t.\`Id\`, 
+        t.\`MeetName\`, 
+        t.\`LocationName\`, 
+        t.\`Address\`, 
+        t.\`Parking\`, 
+        t.\`Concessions\`, 
+        t.\`GmapsLink\`,
+        t.\`CourseMapId\`,
+        t.\`CreatedAt\`,
+        t.\`UpdatedAt\`,
+        c.\`FileName\` as \`CourseMapFileName\`
+      FROM \`TravelInfo\` t
+      LEFT JOIN \`CourseMap\` c ON t.\`CourseMapId\` = c.\`Id\`
+      ORDER BY t.\`MeetName\` ASC
+    `);
+    
+    return rows as TravelInfoRow[];
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch travel info data.');
+  }
+}
