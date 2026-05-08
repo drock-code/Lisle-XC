@@ -1,5 +1,5 @@
 import { getCourseMaps } from '@/lib/queries';
-import CourseMapsClient from './CourseMapsClient';
+import CourseMapsClient from '@/components/CourseMapsClient';
 
 
 export default async function CourseMapsPage() {
