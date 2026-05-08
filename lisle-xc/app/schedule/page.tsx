@@ -28,7 +28,7 @@ export default async function SchedulePage({searchParams}: {
                         <p className="font-body text-light-blue mt-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">View upcoming meets and historical results.</p>
                     </div>
           
-                    <div className="w-full md:w-auto bg-white rounded-lg shadow-sm border border-border px-2 py-1">
+                    <div className="w-full md:w-auto bg-background rounded-lg shadow-sm border border-border px-2 py-1">
                        <YearSelector 
                          years={years} 
                          selectedYear={activeYear} 

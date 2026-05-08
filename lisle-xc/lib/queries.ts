@@ -196,13 +196,11 @@ export interface TravelInfoRow {
   Address: string;
   Parking: string | null;
   Concessions: string | null;
+  ReturnTime: string | null;
   GmapsLink: string | null;
   CourseMapId: number | null;
-  
-  CourseMapFileName: string | null; 
-  
-  CreatedAt: Date;
-  UpdatedAt: Date;
+  Awards: string | null;
+  CourseMapFileName: string | null;
 }
 
 /*************************** FAQ QUERIES *********************************/
@@ -749,10 +747,6 @@ export async function getCourseMaps(): Promise<CourseMapRow[]> {
   }
 }
 
-/**
- * Fetches travel information for all meets, including an optional 
- * file name for an associated course map.
- */
 export async function getTravelInfo(): Promise<TravelInfoRow[]> {
   try {
     const [rows] = await pool.query(`
@@ -763,6 +757,8 @@ export async function getTravelInfo(): Promise<TravelInfoRow[]> {
         t.\`Address\`, 
         t.\`Parking\`, 
         t.\`Concessions\`, 
+        t.\`Awards\`,
+        t.\`ReturnTime\`,
         t.\`GmapsLink\`,
         t.\`CourseMapId\`,
         t.\`CreatedAt\`,

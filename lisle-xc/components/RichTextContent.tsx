@@ -25,7 +25,14 @@ export default function RichTextContent({ content }: { content: string }) {
     return (
         <div 
             ref={contentRef}
-            className="font-body text-foreground leading-relaxed text-lg prose prose-invert max-w-none"
+            className="font-body text-foreground leading-relaxed text-lg prose max-w-none
+                       /* The Fix: Target 'a' tags directly to override prose defaults */
+                       [&_a]:text-foreground
+                       [&_a]:font-bold 
+                       [&_a]:no-underline 
+                       [&_a:hover]:underline 
+                       [&_a:hover]:text-light-blue
+                       [&_a]:transition-colors [&_a]:duration-200"
             dangerouslySetInnerHTML={{ __html: content }}
         />
     );
