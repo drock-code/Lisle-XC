@@ -196,18 +196,12 @@ export interface TravelInfoRow {
   Address: string;
   Parking: string | null;
   Concessions: string | null;
-<<<<<<< Updated upstream
-=======
   ReturnTime: string | null;
   Results: string | null;
->>>>>>> Stashed changes
+  Awards: string | null;
   GmapsLink: string | null;
   CourseMapId: number | null;
-  
-  CourseMapFileName: string | null; 
-  
-  CreatedAt: Date;
-  UpdatedAt: Date;
+  CourseMapFileName: string | null;
 }
 
 /*************************** FAQ QUERIES *********************************/
@@ -768,12 +762,9 @@ export async function getTravelInfo(): Promise<TravelInfoRow[]> {
         t.\`Address\`, 
         t.\`Parking\`, 
         t.\`Concessions\`, 
-<<<<<<< Updated upstream
-=======
         t.\`Awards\`,
         t.\`ReturnTime\`,
         t.\`Results\`,
->>>>>>> Stashed changes
         t.\`GmapsLink\`,
         t.\`CourseMapId\`,
         t.\`CreatedAt\`,

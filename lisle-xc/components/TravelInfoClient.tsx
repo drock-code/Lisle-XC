@@ -23,7 +23,7 @@ export default function TravelInfoClient({ travelInfoData }: TravelInfoClientPro
       {/* Header Section */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
         <div className="text-center md:text-left">
-          <h1 className="font-heading text-4xl font-extrabold text-light-blue tracking-tight drop-shadow-[0_2px_4px_rgba(255,255,255,0.6)] mb-2">
+          <h1 className="font-heading text-4xl font-extrabold text-lisle-blue tracking-tight drop-shadow-[0_2px_4px_rgba(255,255,255,0.6)] mb-2">
             Meet Travel Info
           </h1>
           <p className="font-body text-light-blue drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
