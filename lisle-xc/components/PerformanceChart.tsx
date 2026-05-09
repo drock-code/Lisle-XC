@@ -85,21 +85,25 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
               <circle cx={`${xPercent}%`} cy={`${yPercent}%`} r="15" fill="transparent" className="cursor-pointer" />
               
               {d.isLifetimePR ? (
-                <LifetimePRIcon 
-                  x={`calc(${xPercent}% - ${isHovered ? 14 : 10}px)`} 
-                  y={`calc(${yPercent}% - ${isHovered ? 14 : 10}px)`} 
-                  width={isHovered ? 28 : 20} 
-                  height={isHovered ? 28 : 20} 
-                  className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm" 
-                />
+                <svg x={`${xPercent}%`} y={`${yPercent}%`} className="overflow-visible">
+                  <LifetimePRIcon 
+                    x={isHovered ? -14 : -10} 
+                    y={isHovered ? -14 : -10} 
+                    width={isHovered ? 28 : 20} 
+                    height={isHovered ? 28 : 20} 
+                    className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm" 
+                  />
+                </svg>
               ) : d.isSeasonPR ? (
-                <SeasonPRIcon 
-                  x={`calc(${xPercent}% - ${isHovered ? 10 : 7}px)`} 
-                  y={`calc(${yPercent}% - ${isHovered ? 10 : 7}px)`} 
-                  width={isHovered ? 20 : 14} 
-                  height={isHovered ? 20 : 14} 
-                  className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm" 
-                />
+                <svg x={`${xPercent}%`} y={`${yPercent}%`} className="overflow-visible">
+                  <SeasonPRIcon 
+                    x={isHovered ? -10 : -7} 
+                    y={isHovered ? -10 : -7} 
+                    width={isHovered ? 20 : 14} 
+                    height={isHovered ? 20 : 14} 
+                    className="transition-all duration-200 cursor-pointer overflow-visible drop-shadow-sm" 
+                  />
+                </svg>
               ) : (
                 <DataPointCircle 
                   cx={`${xPercent}%`} 
