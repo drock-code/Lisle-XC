@@ -183,6 +183,16 @@ const nextConfig: NextConfig = {
       // This catches anyone going to records.php WITHOUT a runner ID or the index page without an ID
       { source: '/records.php', destination: '/records', permanent: true }, 
       { source: '/index.php', destination: '/', permanent: true },
+      { 
+        source: '/jquery.editor/plugins/imagemanager/files/images/:slug*', 
+        destination: '/legacy-images/:slug*', 
+        permanent: true 
+      },
+      { 
+        source: '/jquery.editor/plugins/filemanager/files/:path*', 
+        destination: '/files/:path*', 
+        permanent: true 
+      },
     ];
   },
 };
