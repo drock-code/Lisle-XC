@@ -12,6 +12,37 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
+    const notes = [
+      { id: '1', destination: '/notes/1-welcome-to-lisle-cross-country' },
+      { id: '2', destination: '/notes/2-summer-2025-information' },
+      { id: '3', destination: '/notes/3-register-for-the-2025-cross-country-season' },
+      { id: '4', destination: '/notes/4-our-2025-team-captains' },
+      { id: '5', destination: '/notes/5-harvest-westminster-fall-classic-2025-results' },
+      { id: '6', destination: '/notes/6-joliet-central-steelmen-2025-invite-results' },
+      { id: '7', destination: '/notes/7-richard-spring-2025-results' },
+      { id: '8', destination: '/notes/8-herscher-invite-2025-results' },
+      { id: '9', destination: '/notes/9-mane-event-2025-results' },
+      { id: '10', destination: '/notes/10-elmwood-park-tiger-invite-2025-results' },
+      { id: '11', destination: '/notes/11-illinois-central-eight-conference-results' },
+      { id: '12', destination: '/notes/12-moving-on-to-sectional-weekend' },
+      { id: '13', destination: '/notes/13-the-first-state-qualifying-team-in-almost-20-years' },
+      { id: '14', destination: '/notes/14-the-fastest-team-in-lisle-cross-country-history' },
+      { id: '15', destination: '/notes/15-summer-camp-registration-is-open' },
+    ];
+
+    const noteRedirects = notes.map((note) => ({
+      source: '/index.php',
+      has: [
+        {
+          type: 'query' as const,
+          key: 'id',
+          value: note.id,
+        },
+      ],
+      destination: note.destination,
+      permanent: true,
+    }));
+
     const runners = [
       { id: '3', slug: '3-rose-helderle' },
       { id: '4', slug: '4-calla-holik' },
@@ -141,14 +172,17 @@ const nextConfig: NextConfig = {
       permanent: true, // 301 Redirect for SEO
     }));
 
-    // Return the dynamic runners PLUS the 4 static pages
+    // Return the dynamic runners, notes PLUS the 4 static pages
     return [
+      ...noteRedirects,
       ...runnerRedirects,
       { source: '/faq.php', destination: '/faq', permanent: true },
       { source: '/schedule.php', destination: '/schedule', permanent: true },
       { source: '/results.php', destination: '/results', permanent: true },
-      // This catches anyone going to records.php WITHOUT a runner ID
+      { source: '/results.php', destination: '/results', permanent: true },
+      // This catches anyone going to records.php WITHOUT a runner ID or the index page without an ID
       { source: '/records.php', destination: '/records', permanent: true }, 
+      { source: '/index.php', destination: '/', permanent: true },
     ];
   },
 };
