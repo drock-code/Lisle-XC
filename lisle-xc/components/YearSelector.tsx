@@ -34,7 +34,7 @@ export function YearSelector({ years, selectedYear }: YearSelectorProps) {
       wrapperClassName="w-full md:w-auto"
     >
       {years.map((y) => (
-        <option key={y} value={y.toString()}>
+        <option key={y} value={y.toString()} className="bg-white text-black dark:bg-lisle-blue dark:text-white">
           {y} Season
         </option>
       ))}

@@ -46,7 +46,6 @@ export const metadata: Metadata = {
     siteName: 'Lisle Cross Country',
     images: [
       {
-        // Place your lions.jpg in the /public/images folder
         url: '/images/lions.jpg', 
         width: 1200,
         height: 630,
@@ -57,21 +56,7 @@ export const metadata: Metadata = {
   },
 
 icons: {
-    icon: [
-      // Light Mode Icon
-      { 
-        url: '/favicon-96x96.png', 
-        sizes: '96x96', 
-        type: 'image/png', 
-        media: '(prefers-color-scheme: light)' 
-      },
-      // Dark Mode Icon
-      { 
-        url: '/favicon-dark.ico', 
-        type: 'image/x-icon', 
-        media: '(prefers-color-scheme: dark)' 
-      },
-    ],
+    icon: '/favicon-96x96.png',
     apple: '/apple-touch-icon.png',
   },
   
