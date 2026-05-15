@@ -614,28 +614,24 @@ export interface TravelInfoRow {
 
   export async function getRosterYears(): Promise<number[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT DISTINCT Season FROM Meet ORDER BY Season DESC'
+      'SELECT DISTINCT SeasonYear FROM TeamRoster ORDER BY SeasonYear DESC'
     );
-    return rows.map(r => r.Season);
+    return rows.map(r => r.SeasonYear);
   }
 
   export async function getRoster(year: number, level: 'HS' | 'JH') {
-    const isJH = level === 'JH' ? 1 : 0;
-    
     const [rows] = await pool.query<RunnerProfileRow[]>(`
-      SELECT DISTINCT 
-        r.Key, 
+      SELECT 
+        r.\`Key\`, 
         r.Name, 
         r.AvatarURL, 
         r.Gender,
-        rr.Grade
+        tr.Grade
       FROM Runner r
-      JOIN RunnerResult rr ON r.Key = rr.RunnerID
-      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-      JOIN Meet m ON mr.MeetID = m.MeetKey
-      WHERE m.Season = ? AND rr.JH = ?
-      ORDER BY rr.Grade DESC, r.Name ASC
-    `, [year, isJH]);
+      JOIN TeamRoster tr ON r.\`Key\` = tr.RunnerKey
+      WHERE tr.SeasonYear = ? AND tr.Level = ?
+      ORDER BY tr.Grade DESC, r.Name ASC
+    `, [year, level]);
 
     return rows;
   }
