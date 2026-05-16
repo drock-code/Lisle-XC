@@ -149,7 +149,7 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
                                 </span>
                                 <Link 
                                   href={`/runners/${gradeData.M.RunnerKey}-${generateSlug(gradeData.M.RunnerName)}`}
-                                  className="text-sm font-medium text-foreground hover:text-light-blue hover:underline transition-colors truncate max-w-[140px]"
+                                  className="text-sm font-medium text-foreground hover:text-light-blue hover:underline transition-colors truncate max-w-35"
                                 >
                                   {gradeData.M.RunnerName}
                                 </Link>
@@ -169,7 +169,7 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
                                 </span>
                                 <Link 
                                   href={`/runners/${gradeData.F.RunnerKey}-${generateSlug(gradeData.F.RunnerName)}`}
-                                  className="text-sm font-medium text-foreground hover:text-light-blue hover:underline transition-colors truncate max-w-[140px]"
+                                  className="text-sm font-medium text-foreground hover:text-light-blue hover:underline transition-colors truncate max-w-35"
                                 >
                                   {gradeData.F.RunnerName}
                                 </Link>

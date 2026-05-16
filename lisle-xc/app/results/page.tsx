@@ -322,14 +322,23 @@ export default function ResultsPage() {
        ) : activeView === 'Meet' ? (
           /* --- MEET VIEW --- */
           Object.entries(groupedByMeet).map(([uniqueMeetKey, meetResults]) => {
-            // Extract the actual display name from the first result in the group
             const displayMeetName = meetResults[0].MeetName;
+            
+            // Calculate the most common distance for this meet (the "main" distance)
+            const distanceCounts = meetResults.reduce((acc, r) => {
+              acc[r.FormattedDistance] = (acc[r.FormattedDistance] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+            
+            const mainDistance = Object.keys(distanceCounts).reduce((a, b) => 
+              distanceCounts[a] > distanceCounts[b] ? a : b
+            );
             
             return (
               <div key={uniqueMeetKey} className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm">
                 <div className="bg-light-blue-gray p-4 border-b border-border">
                   <h3 className="font-heading font-bold text-xl text-lisle-blue">{displayMeetName}</h3>
-                  <p className="text-sm text-lisle-blue">{new Date(meetResults[0].Date).toLocaleDateString()} • {meetResults[0].FormattedDistance}</p>
+                  <p className="text-sm text-lisle-blue">{new Date(meetResults[0].Date).toLocaleDateString('en-US', { timeZone: 'UTC' })} • {mainDistance}</p>
                 </div>
                 <div className="p-0 overflow-x-auto">
                   <table className="w-full text-left text-sm min-w-125">
@@ -362,6 +371,13 @@ export default function ResultsPage() {
                             <div className="flex items-center space-x-2">
                               <span className="font-bold">
                                 {formatRaceTime(r.Time)}
+                                
+                                {/* Add the distance conditionally if it differs from the main meet distance */}
+                                {r.FormattedDistance !== mainDistance && (
+                                  <span className="ml-2 text-xs font-normal">
+                                    ({r.FormattedDistance})
+                                  </span>
+                                )}
                               </span>
                               {/* PR Icons */}
                               {r.isLifetimePR ? (
