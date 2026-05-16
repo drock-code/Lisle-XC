@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     siteName: 'Lisle Cross Country',
     images: [
       {
-        url: '/images/lions.jpg', 
+        url: '/lions.jpg', 
         width: 1200,
         height: 630,
         alt: 'Lisle Cross Country Team',
