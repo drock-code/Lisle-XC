@@ -100,7 +100,7 @@ export const Navbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center lg:hidden relative z-50 border">
+          <div className="flex items-center lg:hidden relative z-50">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-200 hover:text-white hover:bg-white/10 focus:outline-none cursor-pointer"
@@ -113,7 +113,7 @@ export const Navbar = () => {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-lisle-blue border-t border-white/10 animate-in slide-in-from-top duration-300 relative z-40">
+         <div className="lg:hidden bg-lisle-blue border-t border-white/10 animate-in slide-in-from-top duration-300 relative z-40">
           <div className="px-2 pt-2 pb-6 space-y-1">
             {navLinks.map((link, index) => {
               const isActive = pathname === link.href;
@@ -156,7 +156,6 @@ export const Navbar = () => {
                 </button>
               </form>
             </div>
-            
           </div>
         </div>
       )}
