@@ -36,22 +36,22 @@ export const Navbar = () => {
         <div className="flex justify-between items-center h-20">
           
           {/* Brand Logo */}
-          <div className="shrink-0 flex items-center group h-full py-2">
-            <Link href="/" className="flex items-center gap-3 h-full">
+          <div className="shrink flex items-center group h-full py-2 max-w-[75%]"> 
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 h-full">
               <Image 
                 src="/lions.png" 
                 alt="Lisle Lions Logo" 
                 width={526}
                 height={160} 
                 priority 
-                className="h-full w-auto object-contain group-hover:brightness-110 transition-all" 
+                className="h-8 sm:h-full w-auto object-contain group-hover:brightness-110 transition-all" 
               />
               
               <div className="flex flex-col justify-center">
-                <span className="font-heading font-bold text-xl md:text-2xl tracking-tighter uppercase leading-none">
+                <span className="font-heading font-bold text-lg sm:text-xl md:text-2xl tracking-tighter uppercase leading-none">
                   Lisle
                 </span>
-                <span className="font-heading font-light text-xs md:text-sm tracking-[0.2em] uppercase leading-none text-light-blue mt-1">
+                <span className="font-heading font-light text-[10px] sm:text-xs md:text-sm tracking-[0.2em] uppercase leading-none text-light-blue mt-1">
                   Cross Country
                 </span>
               </div>
@@ -100,7 +100,7 @@ export const Navbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center lg:hidden">
+          <div className="flex items-center lg:hidden relative z-50">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-200 hover:text-white hover:bg-white/10 focus:outline-none cursor-pointer"
@@ -113,7 +113,7 @@ export const Navbar = () => {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-lisle-blue border-t border-white/10 animate-in slide-in-from-top duration-300">
+         <div className="lg:hidden bg-lisle-blue border-t border-white/10 animate-in slide-in-from-top duration-300 relative z-40">
           <div className="px-2 pt-2 pb-6 space-y-1">
             {navLinks.map((link, index) => {
               const isActive = pathname === link.href;
@@ -131,6 +131,31 @@ export const Navbar = () => {
                 </Link>
               );
             })}
+
+            {/* Mobile Search Form */}
+            <div className="px-4 pt-4 pb-2">
+              <form 
+                onSubmit={(e) => {
+                  handleSearch(e);
+                  setIsMobileMenuOpen(false); // Close the menu after searching
+                }}
+                className="flex items-center bg-black/20 rounded-full pl-4 pr-1 py-1 border border-white/10 focus-within:border-light-blue transition-all w-full"
+              >
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search Site..." 
+                  className="bg-transparent text-white text-base focus:outline-none flex-1 font-body placeholder-gray-400 py-1"
+                />
+                <button 
+                  type="submit"
+                  className="bg-light-blue rounded-full p-2 ml-2 hover:brightness-110 transition-all cursor-pointer shrink-0"
+                >
+                  <Search size={16} className="text-lisle-blue" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

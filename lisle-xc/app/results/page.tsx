@@ -195,7 +195,7 @@ export default function ResultsPage() {
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <main className="w-full min-w-0 max-w-7xl mx-auto px-4 py-8 space-y-8">
       <h1 className="font-heading text-4xl font-extrabold text-lisle-blue tracking-tight drop-shadow-[0_2px_4px_rgba(255,255,255,0.6)]">
         Race Results
       </h1>
