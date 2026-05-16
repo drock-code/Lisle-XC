@@ -20,8 +20,8 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const slug = generateSlug(runnerName);
     const fileName = `${runnerId}-${slug}.webp`;
-    const relativePath = `/profiles/${fileName}`;
-    const absolutePath = path.join(process.cwd(), "public", relativePath);
+    const relativePath = `/api/profiles/${fileName}`;
+    const absolutePath = path.join(process.cwd(), "uploads", "profiles", fileName);
 
     // Process Image with Sharp (Resize and Center Crop to Square)
     await sharp(buffer)
