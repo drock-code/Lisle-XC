@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Edit3, Search, ChevronLeft, Loader2, Lock, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useRef, ChangeEvent } from "react";
+import { Edit3, Search, ChevronLeft, Loader2, Lock, Trash2, Upload } from "lucide-react";
+
 import Button from "@/components/Button";
 import { Select } from "@/components/Select";
+import RunnerAvatar from "@/components/RunnerAvatar";
 
 interface Runner {
   Key: number;
@@ -28,6 +30,11 @@ export default function EditRunner() {
   const [lockedGrades, setLockedGrades] = useState<number[]>([]);
   const [isLoadingRoster, setIsLoadingRoster] = useState(false);
 
+  // --- Image & Form State ---
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     async function fetchRunners() {
       try {
@@ -47,6 +54,10 @@ export default function EditRunner() {
 
   useEffect(() => {
     if (!selectedRunner) return;
+    
+    // Sync the preview URL with the selected runner's existing avatar
+    setPreviewUrl(selectedRunner.AvatarURL || null);
+    setSelectedFile(null);
     
     async function fetchRosterHistory() {
       setIsLoadingRoster(true);
@@ -77,6 +88,16 @@ export default function EditRunner() {
     );
   };
 
+  // Handle local file selection and preview
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
   const handleSave = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting || !selectedRunner) return;
@@ -85,6 +106,7 @@ export default function EditRunner() {
     const formData = new FormData(e.currentTarget);
     
     try {
+      // Step 1: Update text details and roster
       const res = await fetch("/api/admin/edit-runner", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,8 +121,23 @@ export default function EditRunner() {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to update runner");
+      if (!res.ok) throw new Error("Failed to update runner text data");
       
+      // Step 2: Upload new avatar if one was selected
+      if (selectedFile) {
+        const imageFormData = new FormData();
+        imageFormData.append("file", selectedFile);
+        imageFormData.append("runnerId", selectedRunner.Key.toString());
+        imageFormData.append("runnerName", formData.get("name") as string);
+
+        const uploadResponse = await fetch("/api/admin/upload-avatar", {
+          method: "POST",
+          body: imageFormData,
+        });
+
+        if (!uploadResponse.ok) throw new Error("Image upload failed");
+      }
+
       alert("Runner updated successfully!");
       setSelectedRunner(null);
       window.location.reload(); 
@@ -135,9 +172,13 @@ export default function EditRunner() {
       alert("Runner deleted successfully!");
       setSelectedRunner(null);
       window.location.reload();
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      alert(error.message);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("An unknown error occurred.");
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -150,7 +191,6 @@ export default function EditRunner() {
       <section className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-4 duration-300">
         <div className="bg-light-blue-gray/50 p-6 border-b border-border flex items-center gap-4">
           
-          {/* Back Button: Custom Button overriding styles for an icon */}
           <Button 
             type="button" 
             size="sm"
@@ -167,6 +207,33 @@ export default function EditRunner() {
         </div>
         
         <form onSubmit={handleSave} className="p-8 space-y-8">
+          
+          {/* Image Upload Section */}
+          <div className="flex flex-col items-center justify-center gap-4 pb-6 border-b border-border/50">
+            <RunnerAvatar 
+              src={previewUrl} 
+              name={selectedRunner.Name || "Runner"} 
+              size="lg" 
+            />
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              accept="image/*" 
+              className="hidden" 
+            />
+            <Button 
+              type="button" 
+              size="sm" 
+              isActive={false}
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-light-blue-gray text-lisle-blue border border-lisle-blue/10 shadow-none hover:bg-blue-50"
+            >
+              <Upload size={14} className="mr-2" />
+              {previewUrl ? "Change Photo" : "Upload Photo"}
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-foreground ml-1">Full Name</label>
@@ -230,7 +297,6 @@ export default function EditRunner() {
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             
             <div className="w-full md:w-auto">
-              {/* Delete Button: Custom Button with red overrides */}
               <Button
                 type="button"
                 onClick={handleDelete}
@@ -294,7 +360,7 @@ export default function EditRunner() {
 
           ))}
           {!isLoading && filteredRunners.length === 0 && (
-            <p className="text-center text-light-gray py-4">No runners found matching "{searchQuery}"</p>
+            <p className="text-center text-light-gray py-4">No runners found matching &quot;{searchQuery}&quot;</p>
           )}
         </div>
       </div>

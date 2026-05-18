@@ -84,9 +84,13 @@ export default function AddRunner() {
       form.reset();
       alert("Runner created successfully!");
 
-    } catch (error: any) {
+    } catch (error) {
       console.error("Submission error:", error);
-      alert(error.message || "An error occurred. Please check the console.");
+      if (error instanceof Error) {
+        alert(error.message || "An error occurred. Please check the console.");
+      } else {
+        alert("An unknown error occurred.");
+      }
     } finally {
       setIsSubmitting(false);
     }
