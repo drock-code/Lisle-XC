@@ -106,7 +106,7 @@ export default function EditRunner() {
     const formData = new FormData(e.currentTarget);
     
     try {
-      // Step 1: Update text details and roster
+      // Update text details and roster
       const res = await fetch("/api/admin/edit-runner", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,7 +123,7 @@ export default function EditRunner() {
 
       if (!res.ok) throw new Error("Failed to update runner text data");
       
-      // Step 2: Upload new avatar if one was selected
+      // Upload new avatar if one was selected
       if (selectedFile) {
         const imageFormData = new FormData();
         imageFormData.append("file", selectedFile);

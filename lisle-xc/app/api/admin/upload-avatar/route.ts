@@ -19,7 +19,8 @@ export async function POST(req: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const slug = generateSlug(runnerName);
-    const fileName = `${runnerId}-${slug}.webp`;
+    const timestamp = Date.now();
+    const fileName = `${runnerId}-${slug}-${timestamp}.webp`;
     const relativePath = `/api/profiles/${fileName}`;
     const absolutePath = path.join(process.cwd(), "uploads", "profiles", fileName);
 
