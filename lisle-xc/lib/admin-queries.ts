@@ -210,50 +210,51 @@ interface AdminQueryResult extends RowDataPacket {
     await pool.execute(deleteRunnerQuery, [runnerId]);
   }
 
-  export async function getAwardsDataForYear(year: number) {
-    const [yearsResult] = await pool.execute(`
-      SELECT DISTINCT SeasonYear 
-      FROM TeamRoster 
-      ORDER BY SeasonYear DESC
-    `);
-    const availableYears = (yearsResult as { SeasonYear: number }[]).map(row => row.SeasonYear);
+  export async function getAwardsDataForYear(requestedYear: number | null) {
+  const [yearsResult] = await pool.execute(`
+    SELECT DISTINCT SeasonYear 
+    FROM TeamRoster 
+    ORDER BY SeasonYear DESC
+  `);
+  const availableYears = (yearsResult as { SeasonYear: number }[]).map(row => row.SeasonYear);
+  const activeYear = requestedYear ?? availableYears[0] ?? new Date().getFullYear();
 
-    const [roster] = await pool.execute(`
-      SELECT r.\`Key\`, r.Name, tr.Level 
-      FROM TeamRoster tr
-      JOIN Runner r ON tr.RunnerKey = r.\`Key\`
-      WHERE tr.SeasonYear = ?
-      ORDER BY r.Name ASC
-    `, [year]);
+  const [roster] = await pool.execute(`
+    SELECT r.\`Key\`, r.Name, tr.Level 
+    FROM TeamRoster tr
+    JOIN Runner r ON tr.RunnerKey = r.\`Key\`
+    WHERE tr.SeasonYear = ?
+    ORDER BY r.Name ASC
+  `, [activeYear]);
 
-    // Get autocomplete suggestions
-    const [awardSuggestions] = await pool.execute(`
-      SELECT DISTINCT Award FROM RunnerAward WHERE Award IS NOT NULL AND Award != ''
-      UNION 
-      SELECT DISTINCT Award FROM TeamAward WHERE Award IS NOT NULL AND Award != ''
-      ORDER BY Award ASC
-    `);
+  // 4. Get autocomplete suggestions
+  const [awardSuggestions] = await pool.execute(`
+    SELECT DISTINCT Award FROM RunnerAward WHERE Award IS NOT NULL AND Award != ''
+    UNION 
+    SELECT DISTINCT Award FROM TeamAward WHERE Award IS NOT NULL AND Award != ''
+    ORDER BY Award ASC
+  `);
 
-    const [captains] = await pool.execute(`
-      SELECT \`Key\`, Name, RunnerKey 
-      FROM Captain 
-      WHERE Year = ?
-    `, [year]);
+  const [captains] = await pool.execute(`
+    SELECT \`Key\`, Name, RunnerKey 
+    FROM Captain 
+    WHERE Year = ?
+  `, [activeYear]);
 
-    const [runnerAwards] = await pool.execute(`
-      SELECT \`Key\`, Name, Award, IsJH, RunnerKey 
-      FROM RunnerAward 
-      WHERE Year = ?
-    `, [year]);
+  const [runnerAwards] = await pool.execute(`
+    SELECT \`Key\`, Name, Award, IsJH, RunnerKey 
+    FROM RunnerAward 
+    WHERE Year = ?
+  `, [activeYear]);
 
-    const [teamAwards] = await pool.execute(`
-      SELECT ID, TeamName, Award 
-      FROM TeamAward 
-      WHERE Year = ?
-    `, [year]);
+  const [teamAwards] = await pool.execute(`
+    SELECT ID, TeamName, Award 
+    FROM TeamAward 
+    WHERE Year = ?
+  `, [activeYear]);
 
-    return { availableYears, roster, awardSuggestions, captains, runnerAwards, teamAwards };
-  }
+  return { availableYears, activeYear, roster, awardSuggestions, captains, runnerAwards, teamAwards };
+}
 
   // --- CAPTAIN QUERIES ---
   export async function insertCaptain(year: number, runnerKey: number, name: string) {
