@@ -5,8 +5,9 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get("year");
-    const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
-
+    
+    // If yearParam doesn't exist, pass null so the database can pick the latest roster year
+    const year = yearParam ? parseInt(yearParam) : null;
     const data = await getAwardsDataForYear(year);
     
     return NextResponse.json(data);

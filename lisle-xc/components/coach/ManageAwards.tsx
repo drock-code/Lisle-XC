@@ -36,7 +36,12 @@ interface TeamAward {
 
 export default function ManageAwards() {
   const searchParams = useSearchParams();
-  const selectedYear = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
+  const urlYear = searchParams.get("year");
+
+  // Track the actual active year returned by the database fallback logic
+  const [activeYear, setActiveYear] = useState<number>(() =>
+    urlYear ? parseInt(urlYear) : new Date().getFullYear()
+  );
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -52,10 +57,12 @@ export default function ManageAwards() {
   // Reusable data loader
   const loadAwardsData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/admin/awards/data?year=${selectedYear}`);
+      const targetUrl = urlYear ? `/api/admin/awards/data?year=${urlYear}` : "/api/admin/awards/data";
+      const res = await fetch(targetUrl);
       if (res.ok) {
         const data = await res.json();
         setAvailableYears(data.availableYears || []);
+        setActiveYear(data.activeYear); // Sync frontend select option with backend fallback target
         setRoster(data.roster || []);
         setAwardSuggestions(data.awardSuggestions || []);
         setCaptains(data.captains || []);
@@ -65,7 +72,7 @@ export default function ManageAwards() {
     } catch (error) {
       console.error("Failed to load awards data", error);
     }
-  }, [selectedYear]);
+  }, [urlYear]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -87,7 +94,7 @@ export default function ManageAwards() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          year: selectedYear, 
+          year: activeYear, 
           runnerKey: runner?.Key, 
           name: runner?.Name 
         }),
@@ -120,7 +127,7 @@ export default function ManageAwards() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          year: selectedYear, 
+          year: activeYear, 
           runnerKey: runner?.Key, 
           name: runner?.Name,
           award,
@@ -150,7 +157,7 @@ export default function ManageAwards() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          year: selectedYear, 
+          year: activeYear, 
           teamName: formData.get("teamName"),
           award: formData.get("award")
         }),
@@ -189,7 +196,7 @@ export default function ManageAwards() {
           Manage Season Awards
         </h2>
         <div className="bg-background border border-border rounded-xl px-4 py-2">
-          <YearSelector years={availableYears} selectedYear={selectedYear} />
+          <YearSelector years={availableYears} selectedYear={activeYear} />
         </div>
       </div>
 
@@ -216,7 +223,7 @@ export default function ManageAwards() {
             
             <form onSubmit={handleAddCaptain} className="flex flex-col sm:flex-row gap-3">
               <Select name="runnerKey" required className="flex-1 p-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-lisle-blue outline-none transition-all">
-                <option value="">Select a runner from the {selectedYear} roster...</option>
+                <option value="">Select a runner from the {activeYear} roster...</option>
                 {roster.map(r => (
                   <option key={r.Key} value={r.Key}>{r.Name} ({r.Level})</option>
                 ))}
