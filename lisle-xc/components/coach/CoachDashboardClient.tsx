@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, Layout, Globe, Users, Edit3, ListChecks } from "lucide-react";
+import { UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy } from "lucide-react";
 
 import { TabGroup, Tab } from "@/components/Tabs";
 import Button from "@/components/Button";
 import AddRunner from "./AddRunner";
 import EditRunner from "./EditRunner";
+import ManageAwards from "./ManageAwards";
 
 type TabType = 'pages' | 'runners' | 'website';
-type RosterViewType = 'add' | 'edit' | 'manage'; 
+type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
 
 interface DashboardProps {
   userName: string;
@@ -60,33 +61,42 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
 
             {activeTab === 'runners' && (
               <div className="flex flex-col gap-3 border-t border-border pt-4">
-  <Button 
-    size="sm" 
-    isActive={rosterView === 'add'} 
-    onClick={() => setRosterView('add')}
-    className="w-full justify-start! gap-3"
-  >
-    <UserPlus size={18} /> Add New Runner
-  </Button>
-  
-  <Button 
-    size="sm" 
-    isActive={rosterView === 'edit'} 
-    onClick={() => setRosterView('edit')}
-    className="w-full justify-start! gap-3"
-  >
-    <Edit3 size={18} /> Edit Runner
-  </Button>
+                <Button 
+                  size="sm" 
+                  isActive={rosterView === 'add'} 
+                  onClick={() => setRosterView('add')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <UserPlus size={18} /> Add New Runner
+                </Button>
+                
+                <Button 
+                  size="sm" 
+                  isActive={rosterView === 'edit'} 
+                  onClick={() => setRosterView('edit')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <Edit3 size={18} /> Edit Runner
+                </Button>
 
-  <Button 
-    size="sm" 
-    isActive={rosterView === 'manage'} 
-    onClick={() => setRosterView('manage')}
-    className="w-full justify-start! gap-3"
-  >
-    <ListChecks size={18} /> Manage Rosters
-  </Button>
-</div>
+                <Button 
+                  size="sm" 
+                  isActive={rosterView === 'awards'} 
+                  onClick={() => setRosterView('awards')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <Trophy size={18} /> Manage Awards
+                </Button>
+
+                <Button 
+                  size="sm" 
+                  isActive={rosterView === 'manage'} 
+                  onClick={() => setRosterView('manage')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <ListChecks size={18} /> Manage Rosters
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -95,7 +105,7 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
         <div className="md:col-span-8">
           {activeTab === 'runners' && rosterView === 'add' && <AddRunner />}
           {activeTab === 'runners' && rosterView === 'edit' && <EditRunner />}
-          
+          {activeTab === 'runners' && rosterView === 'awards' && <ManageAwards />}
           {activeTab === 'runners' && rosterView === 'manage' && (
             <section className="bg-background border border-border rounded-2xl p-12 text-center shadow-sm">
                <ListChecks size={48} className="mx-auto mb-4 text-light-gray opacity-50" />
