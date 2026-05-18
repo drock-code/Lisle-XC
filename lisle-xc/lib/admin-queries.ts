@@ -209,4 +209,91 @@ interface AdminQueryResult extends RowDataPacket {
     const deleteRunnerQuery = "DELETE FROM Runner WHERE `Key` = ?";
     await pool.execute(deleteRunnerQuery, [runnerId]);
   }
+
+  export async function getAwardsDataForYear(year: number) {
+    const [yearsResult] = await pool.execute(`
+      SELECT DISTINCT SeasonYear 
+      FROM TeamRoster 
+      ORDER BY SeasonYear DESC
+    `);
+    const availableYears = (yearsResult as { SeasonYear: number }[]).map(row => row.SeasonYear);
+
+    const [roster] = await pool.execute(`
+      SELECT r.\`Key\`, r.Name, tr.Level 
+      FROM TeamRoster tr
+      JOIN Runner r ON tr.RunnerKey = r.\`Key\`
+      WHERE tr.SeasonYear = ?
+      ORDER BY r.Name ASC
+    `, [year]);
+
+    // Get autocomplete suggestions
+    const [awardSuggestions] = await pool.execute(`
+      SELECT DISTINCT Award FROM RunnerAward WHERE Award IS NOT NULL AND Award != ''
+      UNION 
+      SELECT DISTINCT Award FROM TeamAward WHERE Award IS NOT NULL AND Award != ''
+      ORDER BY Award ASC
+    `);
+
+    const [captains] = await pool.execute(`
+      SELECT \`Key\`, Name, RunnerKey 
+      FROM Captain 
+      WHERE Year = ?
+    `, [year]);
+
+    const [runnerAwards] = await pool.execute(`
+      SELECT \`Key\`, Name, Award, IsJH, RunnerKey 
+      FROM RunnerAward 
+      WHERE Year = ?
+    `, [year]);
+
+    const [teamAwards] = await pool.execute(`
+      SELECT ID, TeamName, Award 
+      FROM TeamAward 
+      WHERE Year = ?
+    `, [year]);
+
+    return { availableYears, roster, awardSuggestions, captains, runnerAwards, teamAwards };
+  }
+
+  // --- CAPTAIN QUERIES ---
+  export async function insertCaptain(year: number, runnerKey: number, name: string) {
+    const [result] = await pool.execute(
+      'INSERT INTO Captain (Year, RunnerKey, Name) VALUES (?, ?, ?)',
+      [year, runnerKey, name]
+    );
+    return result;
+  }
+
+  export async function deleteCaptain(id: number) {
+    const [result] = await pool.execute('DELETE FROM Captain WHERE `Key` = ?', [id]);
+    return result;
+  }
+
+  // --- RUNNER AWARD QUERIES ---
+  export async function insertRunnerAward(year: number, runnerKey: number, name: string, award: string, isJH: boolean) {
+    const [result] = await pool.execute(
+      'INSERT INTO RunnerAward (Year, RunnerKey, Name, Award, IsJH) VALUES (?, ?, ?, ?, ?)',
+      [year, runnerKey, name, award, isJH ? 1 : 0]
+    );
+    return result;
+  }
+
+  export async function deleteRunnerAward(id: number) {
+    const [result] = await pool.execute('DELETE FROM RunnerAward WHERE `Key` = ?', [id]);
+    return result;
+  }
+
+  // --- TEAM AWARD QUERIES ---
+  export async function insertTeamAward(year: number, teamName: string, award: string) {
+    const [result] = await pool.execute(
+      'INSERT INTO TeamAward (Year, TeamName, Award) VALUES (?, ?, ?)',
+      [year, teamName, award]
+    );
+    return result;
+  }
+
+  export async function deleteTeamAward(id: number) {
+    const [result] = await pool.execute('DELETE FROM TeamAward WHERE ID = ?', [id]);
+    return result;
+  }
 /*************************** END OF ADMIN ROSTER QUERIES *********************************/
