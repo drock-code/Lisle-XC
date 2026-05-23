@@ -298,3 +298,47 @@ interface AdminQueryResult extends RowDataPacket {
     return result;
   }
 /*************************** END OF ADMIN ROSTER QUERIES *********************************/
+
+/*************************** ADMIN SCHEDULE QUERIES *********************************/
+  export async function getScheduleForYear(requestedYear: number | null) {
+    // 1. Grab all unique years from the Dates in the schedule
+    const [yearsResult] = await pool.execute(`
+      SELECT DISTINCT YEAR(Date) as SeasonYear 
+      FROM Schedule 
+      WHERE Date IS NOT NULL
+      ORDER BY SeasonYear DESC
+    `);
+    
+    const availableYears = (yearsResult as { SeasonYear: number }[]).map(row => row.SeasonYear);
+
+    // 2. Determine active year (Fallback to newest year or current year)
+    const activeYear = requestedYear ?? availableYears[0] ?? new Date().getFullYear();
+
+    // 3. Fetch the meets for that specific year
+    const [meets] = await pool.execute(`
+      SELECT ID, Meet, Date, Time, Location, Level, Info 
+      FROM Schedule 
+      WHERE YEAR(Date) = ?
+      ORDER BY Date ASC, Time ASC
+    `, [activeYear]);
+
+    return { availableYears, activeYear, meets };
+  }
+
+  export async function insertMeet(
+    meet: string, 
+    date: string, 
+    time: string | null, 
+    location: string | null, 
+    level: string | null, 
+    info: string | null
+  ) {
+    const [result] = await pool.execute(
+      `INSERT INTO Schedule (Meet, Date, Time, Location, Level, Info) 
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [meet, date, time, location, level, info]
+    );
+    return result;
+  }
+
+/*************************** END OF ADMIN SCHEDULE QUERIES *********************************/
