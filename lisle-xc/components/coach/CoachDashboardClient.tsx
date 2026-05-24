@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy } from "lucide-react";
+import { UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy, CalendarDays } from "lucide-react";
 
 import { TabGroup, Tab } from "@/components/Tabs";
 import Button from "@/components/Button";
 import AddRunner from "./AddRunner";
 import EditRunner from "./EditRunner";
 import ManageAwards from "./ManageAwards";
+import ManageSchedule from "./ManageSchedule";
 
 type TabType = 'pages' | 'runners' | 'website';
 type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
+type WebsiteViewType = 'schedule' | 'settings';
 
 interface DashboardProps {
   userName: string;
@@ -19,6 +21,7 @@ interface DashboardProps {
 export default function CoachDashboardClient({ userName }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('runners');
   const [rosterView, setRosterView] = useState<RosterViewType>('add');
+  const [websiteView, setWebsiteView] = useState<WebsiteViewType>('schedule');
 
   return (
     <main className="max-w-4xl mx-auto py-8">
@@ -49,16 +52,17 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
               {activeTab === 'pages' && <Layout size={20} />}
               {activeTab === 'website' && <Globe size={20} />}
               <h2 className="font-bold uppercase tracking-wider text-sm">
-                {activeTab === 'runners' ? 'Roster Management' : activeTab === 'pages' ? 'Content' : 'Settings'}
+                {activeTab === 'runners' ? 'Roster Management' : activeTab === 'pages' ? 'Content' : 'Website Settings'}
               </h2>
             </div>
             
             <p className="text-sm text-light-gray leading-relaxed mb-6">
               {activeTab === 'runners' && "Manage your athlete database, update profiles, and build seasonal rosters."}
               {activeTab === 'pages' && "Edit home page content and race recaps."}
-              {activeTab === 'website' && "Update global links and season dates."}
+              {activeTab === 'website' && "Update your season schedule, global links, and site dates."}
             </p>
 
+            {/* Runners Sub-Navigation */}
             {activeTab === 'runners' && (
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <Button 
@@ -98,11 +102,36 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
                 </Button>
               </div>
             )}
+
+            {/* Website Sub-Navigation */}
+            {activeTab === 'website' && (
+              <div className="flex flex-col gap-3 border-t border-border pt-4">
+                <Button 
+                  size="sm" 
+                  isActive={websiteView === 'schedule'} 
+                  onClick={() => setWebsiteView('schedule')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <CalendarDays size={18} /> Manage Schedule
+                </Button>
+                
+                <Button 
+                  size="sm" 
+                  isActive={websiteView === 'settings'} 
+                  onClick={() => setWebsiteView('settings')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <Globe size={18} /> Global Settings
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* RIGHT COLUMN: Dynamic Content Area */}
         <div className="md:col-span-8">
+          
+          {/* Runners Views */}
           {activeTab === 'runners' && rosterView === 'add' && <AddRunner />}
           {activeTab === 'runners' && rosterView === 'edit' && <EditRunner />}
           {activeTab === 'runners' && rosterView === 'awards' && <ManageAwards />}
@@ -114,12 +143,23 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
             </section>
           )}
 
+          {/* Pages Views */}
           {activeTab === 'pages' && (
-             <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground"><Layout size={48} className="mx-auto mb-4 opacity-20" /><p className="font-bold uppercase tracking-widest text-xs text-light-gray">Page Editor Coming Soon</p></div>
+             <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground">
+               <Layout size={48} className="mx-auto mb-4 opacity-20" />
+               <p className="font-bold uppercase tracking-widest text-xs text-light-gray">Page Editor Coming Soon</p>
+             </div>
           )}
-          {activeTab === 'website' && (
-            <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground"><Globe size={48} className="mx-auto mb-4 opacity-20" /><p className="font-bold uppercase tracking-widest text-xs text-light-gray">Site Settings Coming Soon</p></div>
+
+          {/* Website Views */}
+          {activeTab === 'website' && websiteView === 'schedule' && <ManageSchedule />}
+          {activeTab === 'website' && websiteView === 'settings' && (
+            <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground">
+              <Globe size={48} className="mx-auto mb-4 opacity-20" />
+              <p className="font-bold uppercase tracking-widest text-xs text-light-gray">Site Settings Coming Soon</p>
+            </div>
           )}
+          
         </div>
       </div>
     </main>

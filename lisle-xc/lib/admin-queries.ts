@@ -298,3 +298,108 @@ interface AdminQueryResult extends RowDataPacket {
     return result;
   }
 /*************************** END OF ADMIN ROSTER QUERIES *********************************/
+
+/*************************** ADMIN SCHEDULE QUERIES *********************************/
+  export async function getScheduleForYear(requestedYear: number | null) {
+    // 1. Grab all unique years from the Dates in the schedule
+    const [yearsResult] = await pool.execute(`
+      SELECT DISTINCT YEAR(Date) as SeasonYear 
+      FROM Schedule 
+      WHERE Date IS NOT NULL
+      ORDER BY SeasonYear DESC
+    `);
+    
+    const availableYears = (yearsResult as { SeasonYear: number }[]).map(row => row.SeasonYear);
+
+    // 2. Determine active year (Fallback to newest year or current year)
+    const activeYear = requestedYear ?? availableYears[0] ?? new Date().getFullYear();
+
+    // 3. Fetch the meets for that specific year
+    const [meets] = await pool.execute(`
+      SELECT ID, Meet, Date, Time, Location, Level, Info 
+      FROM Schedule 
+      WHERE YEAR(Date) = ?
+      ORDER BY Date ASC, Time ASC
+    `, [activeYear]);
+
+    return { availableYears, activeYear, meets };
+  }
+
+  export async function insertMeet(
+    meet: string, 
+    date: string, 
+    time: string | null, 
+    location: string | null, 
+    level: string | null, 
+    info: string | null
+  ) {
+    const [result] = await pool.execute(
+      `INSERT INTO Schedule (Meet, Date, Time, Location, Level, Info) 
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [meet, date, time, location, level, info]
+    );
+    return result;
+  }
+
+  export async function updateMeet(
+    id: number,
+    meet: string, 
+    date: string, 
+    time: string | null, 
+    location: string | null, 
+    level: string | null, 
+    info: string | null
+  ) {
+    const [result] = await pool.execute(
+      `UPDATE Schedule 
+       SET Meet = ?, Date = ?, Time = ?, Location = ?, Level = ?, Info = ? 
+       WHERE ID = ?`,
+      [meet, date, time, location, level, info, id]
+    );
+    return result;
+  }
+
+  export async function deleteMeet(id: number) {
+    const [result] = await pool.execute(
+      `DELETE FROM Schedule WHERE ID = ?`,
+      [id]
+    );
+    return result;
+  }
+
+  export async function getRaceFiles(raceId: number) {
+    const [results] = await pool.execute(
+      `SELECT ID, RaceID, Title, File, CreatedAt, UpdatedAt 
+      FROM RaceFile 
+      WHERE RaceID = ?
+      ORDER BY CreatedAt ASC`,
+      [raceId]
+    );
+    return results;
+  }
+
+  export async function insertRaceFile(raceId: number, title: string, fileUrl: string) {
+    const [result] = await pool.execute(
+      `INSERT INTO RaceFile (RaceID, Title, File) VALUES (?, ?, ?)`,
+      [raceId, title, fileUrl]
+    );
+    return result;
+  }
+
+  export async function deleteRaceFile(id: number) {
+    const [result] = await pool.execute(
+      `DELETE FROM RaceFile WHERE ID = ?`,
+      [id]
+    );
+    return result;
+  }
+
+  export async function updateRaceFileTitle(id: number, title: string) {
+    const [result] = await pool.execute(
+      `UPDATE RaceFile SET Title = ? WHERE ID = ?`,
+      [title, id]
+    );
+    return result;
+  }
+
+/*************************** END OF ADMIN SCHEDULE QUERIES *********************************/
