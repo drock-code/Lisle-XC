@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { readdir, mkdir } from "fs/promises";
 import path from "path";
 
-// 1. Create a helper function to recursively crawl directories
+// Recursively crawl directories
 async function getFilesRecursive(currentDir: string, baseDir: string): Promise<string[]> {
   // withFileTypes: true tells Node to return objects that know if they are a file or a folder
   const entries = await readdir(currentDir, { withFileTypes: true });
@@ -37,8 +37,6 @@ export async function GET() {
 
     // Ensure the base directory exists so the server doesn't crash if it's completely empty
     await mkdir(baseDirectoryPath, { recursive: true });
-
-    // 2. Trigger the recursive crawl starting from the base directory
     const fileList = await getFilesRecursive(baseDirectoryPath, baseDirectoryPath);
 
     return NextResponse.json({ files: fileList });

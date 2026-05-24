@@ -8,11 +8,11 @@ import Button from "@/components/Button";
 import AddRunner from "./AddRunner";
 import EditRunner from "./EditRunner";
 import ManageAwards from "./ManageAwards";
-import ManageSchedule from "./ManageSchedule"; // <-- Added import
+import ManageSchedule from "./ManageSchedule";
 
 type TabType = 'pages' | 'runners' | 'website';
 type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
-type WebsiteViewType = 'schedule' | 'settings'; // <-- Added new sub-view type
+type WebsiteViewType = 'schedule' | 'settings';
 
 interface DashboardProps {
   userName: string;
@@ -21,7 +21,7 @@ interface DashboardProps {
 export default function CoachDashboardClient({ userName }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('runners');
   const [rosterView, setRosterView] = useState<RosterViewType>('add');
-  const [websiteView, setWebsiteView] = useState<WebsiteViewType>('schedule'); // <-- Added state
+  const [websiteView, setWebsiteView] = useState<WebsiteViewType>('schedule');
 
   return (
     <main className="max-w-4xl mx-auto py-8">

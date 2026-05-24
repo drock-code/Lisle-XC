@@ -7,10 +7,11 @@ interface MediaChooserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (url: string) => void;
-  type: "file" | "image"; // Dictates endpoints and UI labels
+  type: "file" | "image";
+  targetPath?: string;
 }
 
-export default function MediaChooserModal({ isOpen, onClose, onSelect, type }: MediaChooserModalProps) {
+export default function MediaChooserModal({ isOpen, onClose, onSelect, type, targetPath }: MediaChooserModalProps) {
   const [activeTab, setActiveTab] = useState<'url' | 'existing' | 'upload'>('url');
   const [customUrl, setCustomUrl] = useState("");
   const [existingItems, setExistingItems] = useState<string[]>([]);
@@ -45,6 +46,9 @@ export default function MediaChooserModal({ isOpen, onClose, onSelect, type }: M
     setIsUploading(true);
     const formData = new FormData();
     formData.append("file", file);
+    if (targetPath) {
+      formData.append("targetPath", targetPath);
+    }
 
     try {
       const res = await fetch(apiUploadUrl, { method: "POST", body: formData });
@@ -59,9 +63,14 @@ export default function MediaChooserModal({ isOpen, onClose, onSelect, type }: M
     }
   };
 
+  // --- NEW: Filter items to only show the target year's folder if provided ---
+  const displayItems = targetPath 
+    ? existingItems.filter(item => item.startsWith(targetPath))
+    : existingItems;
+
   // Grouping & Sorting logic
-  const rootFiles = existingItems.filter(f => !f.includes('/')).sort();
-  const nestedFiles = existingItems.filter(f => f.includes('/'));
+  const rootFiles = displayItems.filter(f => !f.includes('/')).sort();
+  const nestedFiles = displayItems.filter(f => f.includes('/'));
   const groupedDirs = nestedFiles.reduce((acc, filePath) => {
     const lastSlashIdx = filePath.lastIndexOf('/');
     const dirName = filePath.substring(0, lastSlashIdx);
@@ -73,7 +82,7 @@ export default function MediaChooserModal({ isOpen, onClose, onSelect, type }: M
   const sortedDirNames = Object.keys(groupedDirs).sort();
 
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 rounded-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-background border border-border rounded-xl p-4 w-full max-w-sm shadow-xl flex flex-col gap-4">
         
         <div className="flex justify-between items-center">
@@ -114,8 +123,10 @@ export default function MediaChooserModal({ isOpen, onClose, onSelect, type }: M
         {/* TAB 2: Asset Grid / List */}
         {activeTab === 'existing' && (
           <div className="flex flex-col gap-1 max-h-64 overflow-y-auto border border-border rounded-md p-2">
-            {existingItems.length === 0 ? (
-              <span className="text-sm text-light-gray italic text-center p-2">No files found.</span>
+            {displayItems.length === 0 ? (
+              <span className="text-sm text-light-gray italic text-center p-2">
+                {targetPath ? `No files found in ${targetPath}.` : "No files found."}
+              </span>
             ) : (
               <>
                 {rootFiles.map(file => (
@@ -168,7 +179,6 @@ export default function MediaChooserModal({ isOpen, onClose, onSelect, type }: M
              {isUploading && <span className="text-sm font-bold text-lisle-blue animate-pulse text-center">Uploading...</span>}
           </div>
         )}
-
       </div>
     </div>
   );

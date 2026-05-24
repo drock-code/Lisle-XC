@@ -6,7 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { 
   Bold, Italic, Underline as UnderlineIcon, 
   Heading1, Heading2, Heading3, Heading4, List, ListOrdered, Link2, Image as ImageIcon,
@@ -52,7 +52,6 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
 
   const editor = useEditor({
     immediatelyRender: false,
-    // THE FIX: We brought the extensions back!
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4] },
@@ -78,14 +77,6 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
       editor.commands.setContent(value);
     }
   }, [value, editor]);
-
-
-
-  
-
-
-
-
 
   if (!editor) return null;
 
@@ -121,7 +112,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           <UnderlineIcon size={16} />
         </button>
 
-        <div className="w-[1px] h-6 bg-border mx-1" />
+        <div className="w-px h-6 bg-border mx-1" />
 
 {/* ALIGN LEFT */}
         <button
@@ -153,7 +144,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           <AlignRight size={16} />
         </button>
 
-        <div className="w-[1px] h-6 bg-border mx-1" />
+        <div className="w-px h-6 bg-border mx-1" />
 
         <button
           type="button"
@@ -173,7 +164,6 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           <Heading2 size={16} />
         </button>
 
-        {/* Heading 3 - NEW */}
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
@@ -183,7 +173,6 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           <Heading3 size={16} />
         </button>
 
-        {/* Heading 4 - NEW */}
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
@@ -193,7 +182,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           <Heading4 size={16} />
         </button>
 
-        <div className="w-[1px] h-6 bg-border mx-1" />
+        <div className="w-px h-6 bg-border mx-1" />
 
         <button
           type="button"
@@ -213,9 +202,9 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           <ListOrdered size={16} />
         </button>
 
-        <div className="w-[1px] h-6 bg-border mx-1" />
+        <div className="w-px h-6 bg-border mx-1" />
 
-{/* LINK BUTTON */}
+        {/* LINK BUTTON */}
         <button
           type="button"
           onClick={() => setModalConfig({ isOpen: true, type: "file" })}
@@ -238,7 +227,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
         {/* IMAGE FLOAT CONTROLS (Only visible when an image is selected!) */}
         {editor.isActive('image') && (
           <>
-            <div className="w-[1px] h-6 bg-border mx-1" />
+            <div className="w-px h-6 bg-border mx-1" />
             <span className="text-xs uppercase tracking-widest text-light-gray ml-1 mr-2">Image:</span>
             
             <button

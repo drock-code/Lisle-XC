@@ -34,7 +34,6 @@ export async function POST(request: Request) {
     // Sanitize the HTML! This removes <script> tags and bad attributes while keeping formatting, lists, and images safe.
     const sanitizedInfo = info ? DOMPurify.sanitize(info) : null;
 
-    // Use the sanitized data in your database insertion
     await insertMeet(meet, date, time, location, level, sanitizedInfo);
 
     return NextResponse.json({ success: true, message: "Meet added successfully" });

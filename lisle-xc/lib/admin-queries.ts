@@ -341,4 +341,65 @@ interface AdminQueryResult extends RowDataPacket {
     return result;
   }
 
+  export async function updateMeet(
+    id: number,
+    meet: string, 
+    date: string, 
+    time: string | null, 
+    location: string | null, 
+    level: string | null, 
+    info: string | null
+  ) {
+    const [result] = await pool.execute(
+      `UPDATE Schedule 
+       SET Meet = ?, Date = ?, Time = ?, Location = ?, Level = ?, Info = ? 
+       WHERE ID = ?`,
+      [meet, date, time, location, level, info, id]
+    );
+    return result;
+  }
+
+  export async function deleteMeet(id: number) {
+    const [result] = await pool.execute(
+      `DELETE FROM Schedule WHERE ID = ?`,
+      [id]
+    );
+    return result;
+  }
+
+  export async function getRaceFiles(raceId: number) {
+    const [results] = await pool.execute(
+      `SELECT ID, RaceID, Title, File, CreatedAt, UpdatedAt 
+      FROM RaceFile 
+      WHERE RaceID = ?
+      ORDER BY CreatedAt ASC`,
+      [raceId]
+    );
+    return results;
+  }
+
+  export async function insertRaceFile(raceId: number, title: string, fileUrl: string) {
+    const [result] = await pool.execute(
+      `INSERT INTO RaceFile (RaceID, Title, File) VALUES (?, ?, ?)`,
+      [raceId, title, fileUrl]
+    );
+    return result;
+  }
+
+  export async function deleteRaceFile(id: number) {
+    const [result] = await pool.execute(
+      `DELETE FROM RaceFile WHERE ID = ?`,
+      [id]
+    );
+    return result;
+  }
+
+  export async function updateRaceFileTitle(id: number, title: string) {
+    const [result] = await pool.execute(
+      `UPDATE RaceFile SET Title = ? WHERE ID = ?`,
+      [title, id]
+    );
+    return result;
+  }
+
 /*************************** END OF ADMIN SCHEDULE QUERIES *********************************/

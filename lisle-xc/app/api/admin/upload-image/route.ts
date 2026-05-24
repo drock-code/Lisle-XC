@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const cleanFileName = file.name.replace(/\s+/g, '-').toLowerCase();
     const uniqueFileName = `${Date.now()}-${cleanFileName}`;
 
-    // UPDATED: Define the absolute path to public/images
+    // Define the absolute path to public/images
     const uploadDir = path.join(process.cwd(), "public", "images");
 
     // Ensure the directory exists (this creates it if it doesn't!)
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const filepath = path.join(uploadDir, uniqueFileName);
     await writeFile(filepath, buffer);
 
-    // UPDATED: Return the correct public URL so the editor can display it
+    // Return the correct public URL so the editor can display it
     const publicUrl = `/images/${uniqueFileName}`;
 
     return NextResponse.json({ url: publicUrl });
