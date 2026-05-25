@@ -566,14 +566,14 @@ export interface MeetRow extends RowDataPacket {
     return rows;
   }
 
-  export async function getExistingMeetResults(meetKey: number) {
+  export async function getExistingMeetResults(meetKey: number, routeKey: number) {
     const [results] = await pool.query<RowDataPacket[]>(`
       SELECT rr.RunnerID, rr.Time, mr.RaceKey
       FROM RunnerResult rr
       JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-      WHERE mr.MeetID = ?
-    `, [meetKey]);
+      WHERE mr.MeetID = ? AND mr.RouteKey = ?
+    `, [meetKey, routeKey]);
 
-    return results; // Returns an array like: [{ RunnerID: 5, Time: '18:30:00', Place: 1, RaceKey: 12 }]
+    return results; 
   }
 /*************************** END OF ADMIN RESULT QUERIES *********************************/

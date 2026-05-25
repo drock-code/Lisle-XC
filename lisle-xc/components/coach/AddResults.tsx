@@ -267,9 +267,10 @@ export default function AddResults({ initialMeetKey }: { initialMeetKey?: number
 
       // Fetch Existing Results if a meet is selected
       let existingResults: any[] = [];
-      if (selectedMeet && selectedMeet !== "NEW") {
+      if (selectedMeet && selectedMeet !== "NEW" && selectedRoute) {
         try {
-          const existingRes = await fetch(`/api/results/existing?meetKey=${selectedMeet}`);
+          const existingRes = await fetch(`/api/results/existing?meetKey=${selectedMeet}&routeKey=${selectedRoute}`);
+          
           if (existingRes.ok) {
             existingResults = await existingRes.json();
           }
