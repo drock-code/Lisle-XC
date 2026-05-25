@@ -178,6 +178,7 @@ export interface SearchFilters {
   distance?: string;
   minTime?: string;
   maxTime?: string;
+  year?: string | number;
   level?: 'HS' | 'JH';
   prStatus?: 'Lifetime' | 'Season' | '';
 }
@@ -437,21 +438,22 @@ export interface TravelInfoRow {
 
   export async function searchMeetResults(filters: SearchFilters) {
     const formatForDb = (timeStr: string | undefined | null) => {
-    if (!timeStr || timeStr.trim() === '') return null;
-    
-    // If user typed "18:00", convert to "00:18:00"
-    const parts = timeStr.split(':');
-    if (parts.length === 2) {
-      return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-    }
-    
-    // If it's already "00:18:00" or similar, just return it
-    return timeStr;
-  };
-  
+      if (!timeStr || timeStr.trim() === '') return null;
+      
+      // If user typed "18:00", convert to "00:18:00"
+      const parts = timeStr.split(':');
+      if (parts.length === 2) {
+        return `00:${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+      }
+      
+      // If it's already "00:18:00" or similar, just return it
+      return timeStr;
+    };
+
     let query = `
       SELECT 
         rr.*,
+        r.Name AS Runner, 
         m.Name AS MeetName, m.Date, m.Season,
         rt.Distance, rt.DistanceUnit,
         r.AvatarURL, r.Gender,
@@ -497,6 +499,12 @@ export interface TravelInfoRow {
       query += ` AND rr.JH = ?`;
       values.push(filters.level === 'JH' ? 1 : 0);
     }
+    
+    if (filters.year) {
+      query += ` AND m.Season = ?`;
+      values.push(Number(filters.year));
+    }
+
     if (filters.startDate) { query += ` AND m.Date >= ?`; values.push(filters.startDate); }
     if (filters.endDate) { query += ` AND m.Date <= ?`; values.push(filters.endDate); }
     if (filters.athleteId) { query += ` AND rr.RunnerID = ?`; values.push(filters.athleteId); }
@@ -536,6 +544,19 @@ export interface TravelInfoRow {
       isSeasonPR: !!row.isSeasonPR,
       FormattedDistance: `${parseFloat(row.Distance)} ${row.DistanceUnit}`
     }));
+  }
+
+  export async function getResultYears() {
+    const [yearsRows] = await pool.query<RowDataPacket[]>(`
+      SELECT DISTINCT m.Season
+      FROM Meet m
+      JOIN MeetRace mr ON m.MeetKey = mr.MeetID
+      JOIN RunnerResult rr ON mr.RaceKey = rr.RaceID
+      WHERE m.Season IS NOT NULL
+      ORDER BY m.Season DESC
+    `);
+
+    return yearsRows.map(row => row.Season);
   }
 /*************************** END OF RESULTS PAGE QUERIES *********************************/
 
@@ -619,22 +640,30 @@ export interface TravelInfoRow {
     return rows.map(r => r.SeasonYear);
   }
 
-  export async function getRoster(year: number, level: 'HS' | 'JH') {
-    const [rows] = await pool.query<RunnerProfileRow[]>(`
-      SELECT 
-        r.\`Key\`, 
-        r.Name, 
-        r.AvatarURL, 
-        r.Gender,
-        tr.Grade
-      FROM Runner r
-      JOIN TeamRoster tr ON r.\`Key\` = tr.RunnerKey
-      WHERE tr.SeasonYear = ? AND tr.Level = ?
-      ORDER BY tr.Grade DESC, r.Name ASC
-    `, [year, level]);
+export async function getRoster(
+  year: number, 
+  level: 'HS' | 'JH',
+  sortBy: 'grade' | 'name' = 'grade'
+) {
+  const orderClause = sortBy === 'name' 
+    ? 'ORDER BY r.Name ASC' 
+    : 'ORDER BY tr.Grade DESC, r.Name ASC';
 
-    return rows;
-  }
+  const [rows] = await pool.query<RunnerProfileRow[]>(`
+    SELECT 
+      r.\`Key\`, 
+      r.Name, 
+      r.AvatarURL, 
+      r.Gender,
+      tr.Grade
+    FROM Runner r
+    JOIN TeamRoster tr ON r.\`Key\` = tr.RunnerKey
+    WHERE tr.SeasonYear = ? AND tr.Level = ?
+    ${orderClause}
+  `, [year, level]);
+
+  return rows;
+}
 /*************************** END OF RUNNER PROFILE QUERIES *********************************/
 
 /*************************** SCHEDULE QUERIES *********************************/

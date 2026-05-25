@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy, CalendarDays } from "lucide-react";
+import { UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy, CalendarDays, PlusCircle } from "lucide-react";
 
 import { TabGroup, Tab } from "@/components/Tabs";
 import Button from "@/components/Button";
@@ -9,10 +9,11 @@ import AddRunner from "./AddRunner";
 import EditRunner from "./EditRunner";
 import ManageAwards from "./ManageAwards";
 import ManageSchedule from "./ManageSchedule";
+import AddResults from "./AddResults";
 
 type TabType = 'pages' | 'runners' | 'website';
 type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
-type WebsiteViewType = 'schedule' | 'settings';
+type WebsiteViewType = 'schedule' | 'settings' | 'results';
 
 interface DashboardProps {
   userName: string;
@@ -22,6 +23,7 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('runners');
   const [rosterView, setRosterView] = useState<RosterViewType>('add');
   const [websiteView, setWebsiteView] = useState<WebsiteViewType>('schedule');
+  const [selectedMeetKey, setSelectedMeetKey] = useState<number | undefined>(undefined);
 
   return (
     <main className="max-w-4xl mx-auto py-8">
@@ -114,6 +116,15 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
                 >
                   <CalendarDays size={18} /> Manage Schedule
                 </Button>
+
+                <Button 
+                  size="sm" 
+                  isActive={websiteView === 'results'} 
+                  onClick={() => setWebsiteView('results')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <PlusCircle size={18} /> Add Race Results
+                </Button>
                 
                 <Button 
                   size="sm" 
@@ -153,6 +164,13 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
 
           {/* Website Views */}
           {activeTab === 'website' && websiteView === 'schedule' && <ManageSchedule />}
+          
+          {/* Render the AddResults component when selected */}
+          {activeTab === 'website' && websiteView === 'results' && (
+            <AddResults initialMeetKey={selectedMeetKey} />
+          )}
+          
+          {/* Website Settings Fallback */}
           {activeTab === 'website' && websiteView === 'settings' && (
             <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground">
               <Globe size={48} className="mx-auto mb-4 opacity-20" />
