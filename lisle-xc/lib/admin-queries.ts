@@ -488,22 +488,30 @@ export interface MeetRow extends RowDataPacket {
 
       // Insert the results
       for (const res of results) {
-    if (!res.runnerKey || !res.time) continue; // Skip incomplete rows
-    
-    let formattedTime = res.time.trim();
-    
-    // Count how many colons are in the string. 
-    // If there's only 1 (e.g., "21:47" or "21:47.55"), it's MM:SS.
-    // We prepend "00:" to force MySQL to read it as HH:MM:SS.
-    if (formattedTime.split(':').length === 2) {
-      formattedTime = `00:${formattedTime}`;
-    }
+        if (!res.runnerKey || !res.time) continue; // Skip incomplete rows
+        
+        let formattedTime = res.time.trim();
+        
+        // Count how many colons are in the string. 
+        // If there's only 1 (e.g., "21:47" or "21:47.55"), it's MM:SS.
+        // We prepend "00:" to force MySQL to read it as HH:MM:SS.
+        if (formattedTime.split(':').length === 2) {
+          formattedTime = `00:${formattedTime}`;
+        }
 
-    await connection.query<ResultSetHeader>(
-      'INSERT INTO RunnerResult (RaceID, RunnerID, Grade, Time, JH, Date) VALUES (?, ?, ?, ?, ?, ?)',
-      [raceKey, res.runnerKey, res.grade || null, formattedTime, isJh, date] 
-    );
-  }
+        // Upsert: Insert new row, or update existing if RaceID + RunnerID matches
+        await connection.query<ResultSetHeader>(
+          `INSERT INTO RunnerResult (RaceID, RunnerID, Grade, Time, JH, Date) 
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE 
+            Time = VALUES(Time), 
+            Grade = VALUES(Grade),
+            JH = VALUES(JH),
+            Date = VALUES(Date)`,
+          [raceKey, res.runnerKey, res.grade || null, formattedTime, isJh, date] 
+        );
+      }
+      
       await connection.commit();
       return { success: true, raceKey };
     } catch (error) {

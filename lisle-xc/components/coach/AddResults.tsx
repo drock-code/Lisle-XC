@@ -36,6 +36,7 @@ interface ParsedResult {
   time: string;
   runnerKey: number | string;
   grade: string | number;
+  originalTime?: string;
 }
 
 interface ScrapedApiResult {
@@ -295,7 +296,8 @@ export default function AddResults({ initialMeetKey }: { initialMeetKey?: number
           rawName: r.Name,
           time: prefilledTime, 
           runnerKey: r.Key, 
-          grade: r.Grade
+          grade: r.Grade,
+          originalTime: prefilledTime
         };
       });
 
@@ -327,8 +329,14 @@ export default function AddResults({ initialMeetKey }: { initialMeetKey?: number
       return alert("Please verify Meet, Route, and Result Date are all selected!");
     }
     
-    const validResults = parsedResults.filter(r => r.runnerKey !== "" && r.time.trim() !== "");
-    if (validResults.length === 0) return alert("No runners with completed times to save.");
+    // Check for valid runner, non-empty time, AND ensure the time actually changed or is new
+    const validResults = parsedResults.filter(r => 
+      r.runnerKey !== "" && 
+      r.time.trim() !== "" && 
+      r.time.trim() !== r.originalTime 
+    );
+
+    if (validResults.length === 0) return alert("No new or updated runners with completed times to save.");
 
     setIsSaving(true);
     try {
