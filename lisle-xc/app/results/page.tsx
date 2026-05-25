@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ChevronUp, ChevronDown } from 'lucide-react';
@@ -50,7 +50,7 @@ interface FilterPayload {
 type SortColumn = 'Runner' | 'Grade' | 'Time' | 'Date' | 'MeetName' | 'FormattedDistance' | null;
 type SortDirection = 'asc' | 'desc';
 
-export default function ResultsPage() {
+function ResultsContent() {
   const [activeView, setActiveView] = useState<'Meet' | 'Runner' | 'Table'>('Meet');
   const [activeLevel, setActiveLevel] = useState<'HS' | 'JH'>('HS');
   
@@ -491,5 +491,22 @@ export default function ResultsPage() {
         )}
       </div>
     </main>
+  );
+}
+
+// Export wrapper with Suspense
+export default function ResultsPage() {
+  return (
+    <Suspense 
+      fallback={
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center text-light-gray font-bold animate-pulse">
+            Loading results framework...
+          </div>
+        </div>
+      }
+    >
+      <ResultsContent />
+    </Suspense>
   );
 }
