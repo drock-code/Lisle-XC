@@ -5,6 +5,51 @@ interface AdminQueryResult extends RowDataPacket {
   Admin: number;
 }
 
+export interface RouteRow extends RowDataPacket {
+  RouteKey: number;
+  Name: string;
+  Distance: number;
+  DistanceUnit: string;
+}
+
+export interface RunnerRow extends RowDataPacket {
+  Key: number;
+  Name: string;
+  Grade: number | null;
+  GraduationYear: number | null;
+}
+
+export interface MeetRaceRow extends RowDataPacket {
+  RaceKey: number;
+}
+
+export interface RunnerResultPayload {
+  runnerKey: number;
+  time: string;
+  grade?: string | number | null;
+}
+
+export interface NewMeetData {
+  MeetKey: number;
+  Meet: string;
+  Date: string;
+  Season: number;
+}
+
+export interface NewRouteData {
+  RouteKey: number;
+  Name: string;
+  Distance: number;
+  DistanceUnit: string;
+}
+
+export interface MeetRow extends RowDataPacket {
+  MeetKey: number;
+  Meet: string; 
+  Date: Date;
+  Season: number;
+}
+
 /*************************** ADMIN LOGIN QUERIES *********************************/
   export async function isAdminAndLinkAccount(email: string | null | undefined, googleId: string): Promise<boolean> {
     if (!email) return false;
@@ -227,7 +272,7 @@ interface AdminQueryResult extends RowDataPacket {
     ORDER BY r.Name ASC
   `, [activeYear]);
 
-  // 4. Get autocomplete suggestions
+  // Get autocomplete suggestions
   const [awardSuggestions] = await pool.execute(`
     SELECT DISTINCT Award FROM RunnerAward WHERE Award IS NOT NULL AND Award != ''
     UNION 
@@ -301,7 +346,7 @@ interface AdminQueryResult extends RowDataPacket {
 
 /*************************** ADMIN SCHEDULE QUERIES *********************************/
   export async function getScheduleForYear(requestedYear: number | null) {
-    // 1. Grab all unique years from the Dates in the schedule
+    // Grab all unique years from the Dates in the schedule
     const [yearsResult] = await pool.execute(`
       SELECT DISTINCT YEAR(Date) as SeasonYear 
       FROM Schedule 
@@ -311,10 +356,10 @@ interface AdminQueryResult extends RowDataPacket {
     
     const availableYears = (yearsResult as { SeasonYear: number }[]).map(row => row.SeasonYear);
 
-    // 2. Determine active year (Fallback to newest year or current year)
+    // Determine active year (Fallback to newest year or current year)
     const activeYear = requestedYear ?? availableYears[0] ?? new Date().getFullYear();
 
-    // 3. Fetch the meets for that specific year
+    // Fetch the meets for that specific year
     const [meets] = await pool.execute(`
       SELECT ID, Meet, Date, Time, Location, Level, Info 
       FROM Schedule 
@@ -325,7 +370,7 @@ interface AdminQueryResult extends RowDataPacket {
     return { availableYears, activeYear, meets };
   }
 
-  export async function insertMeet(
+  export async function insertMeetToSchedule(
     meet: string, 
     date: string, 
     time: string | null, 
@@ -401,5 +446,126 @@ interface AdminQueryResult extends RowDataPacket {
     );
     return result;
   }
-
 /*************************** END OF ADMIN SCHEDULE QUERIES *********************************/
+
+/*************************** ADMIN RESULT QUERIES *********************************/
+  export async function getRoutes(): Promise<RouteRow[]> {
+    const [rows] = await pool.query<RouteRow[]>(
+      'SELECT RouteKey, Name, Distance, DistanceUnit FROM Route ORDER BY Name ASC'
+    );
+    return rows;
+  }
+
+  export async function saveMeetResults(
+    meetKey: number, 
+    routeKey: number, 
+    isJh: number, 
+    results: RunnerResultPayload[],
+    date: string
+  ): Promise<{ success: boolean; raceKey: number }> {
+    
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Find or create the MeetRace link
+      const [existingRace] = await connection.query<MeetRaceRow[]>(
+        'SELECT RaceKey FROM MeetRace WHERE MeetID = ? AND RouteKey = ? AND JH = ?',
+        [meetKey, routeKey, isJh]
+      );
+
+      let raceKey: number;
+
+      if (existingRace.length > 0) {
+        raceKey = existingRace[0].RaceKey;
+      } else {
+        const [newRace] = await connection.query<ResultSetHeader>(
+          'INSERT INTO MeetRace (MeetID, RouteKey, JH) VALUES (?, ?, ?)',
+          [meetKey, routeKey, isJh]
+        );
+        raceKey = newRace.insertId;
+      }
+
+      // Insert the results
+      for (const res of results) {
+    if (!res.runnerKey || !res.time) continue; // Skip incomplete rows
+    
+    let formattedTime = res.time.trim();
+    
+    // Count how many colons are in the string. 
+    // If there's only 1 (e.g., "21:47" or "21:47.55"), it's MM:SS.
+    // We prepend "00:" to force MySQL to read it as HH:MM:SS.
+    if (formattedTime.split(':').length === 2) {
+      formattedTime = `00:${formattedTime}`;
+    }
+
+    await connection.query<ResultSetHeader>(
+      'INSERT INTO RunnerResult (RaceID, RunnerID, Grade, Time, JH, Date) VALUES (?, ?, ?, ?, ?, ?)',
+      [raceKey, res.runnerKey, res.grade || null, formattedTime, isJh, date] 
+    );
+  }
+      await connection.commit();
+      return { success: true, raceKey };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  export async function insertMeet(name: string, date: string, season: number): Promise<NewMeetData> {
+    const [result] = await pool.query<ResultSetHeader>(
+      'INSERT INTO Meet (Name, Date, Season) VALUES (?, ?, ?)',
+      [name, date, season]
+    );
+
+    return {
+      MeetKey: result.insertId,
+      Meet: name,
+      Date: date,
+      Season: season
+    };
+  }
+
+  // Insert a new route and return the newly created row data
+  export async function insertRoute(name: string, distance: number, distanceUnit: string): Promise<NewRouteData> {
+    const [result] = await pool.query<ResultSetHeader>(
+      'INSERT INTO Route (Name, Distance, DistanceUnit) VALUES (?, ?, ?)',
+      [name, distance, distanceUnit]
+    );
+
+    return {
+      RouteKey: result.insertId,
+      Name: name,
+      Distance: distance,
+      DistanceUnit: distanceUnit
+    };
+  }
+
+  export async function getMeets(year?: number): Promise<MeetRow[]> {
+    let query: string;
+    let queryParams: number[] = [];
+
+    if (year) {
+      query = 'SELECT MeetKey, Name AS Meet, Date, Season FROM Meet WHERE Season = ? ORDER BY Date ASC';
+      queryParams = [year];
+    } else {
+      query = 'SELECT MeetKey, Name AS Meet, Date, Season FROM Meet ORDER BY Date ASC';
+    }
+
+    const [rows] = await pool.query<MeetRow[]>(query, queryParams);
+    return rows;
+  }
+
+  export async function getExistingMeetResults(meetKey: number) {
+    const [results] = await pool.query<RowDataPacket[]>(`
+      SELECT rr.RunnerID, rr.Time, mr.RaceKey
+      FROM RunnerResult rr
+      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+      WHERE mr.MeetID = ?
+    `, [meetKey]);
+
+    return results; // Returns an array like: [{ RunnerID: 5, Time: '18:30:00', Place: 1, RaceKey: 12 }]
+  }
+/*************************** END OF ADMIN RESULT QUERIES *********************************/

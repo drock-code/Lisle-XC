@@ -35,7 +35,7 @@ export function YearSelector({ years, selectedYear }: YearSelectorProps) {
     >
       {years.map((y) => (
         <option key={y} value={y.toString()} className="bg-white text-black dark:bg-lisle-blue dark:text-white">
-          {y} Season
+          {y === "All" ? "All Years" : `${y} Season`}
         </option>
       ))}
     </Select>

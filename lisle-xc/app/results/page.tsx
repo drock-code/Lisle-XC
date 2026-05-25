@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
 import ResultsSearch from '@/components/ResultsSearch';
 import Pagination from '@/components/Pagination';
 import { TabGroup, Tab } from '@/components/Tabs';
+import { YearSelector } from '@/components/YearSelector';
 
 import { timeToSeconds, formatRaceTime, generateSlug } from '@/lib/utils';
-import {LifetimePRIcon, SeasonPRIcon} from '@/components/Icons';
+import { LifetimePRIcon, SeasonPRIcon } from '@/components/Icons';
 import RunnerAvatar from '@/components/RunnerAvatar';
 
 interface RunnerOption { Key: number; Name: string; }
@@ -42,36 +44,57 @@ interface FilterPayload {
   maxTime?: string;
   prStatus?: string;
   level?: 'HS' | 'JH';
+  year?: string; 
 }
 
-type SortColumn = 'Runner' | 'Grade' | 'Time' | 'Date' | 'MeetName' | 'FormattedDistance' |null;
+type SortColumn = 'Runner' | 'Grade' | 'Time' | 'Date' | 'MeetName' | 'FormattedDistance' | null;
 type SortDirection = 'asc' | 'desc';
 
 export default function ResultsPage() {
   const [activeView, setActiveView] = useState<'Meet' | 'Runner' | 'Table'>('Meet');
   const [activeLevel, setActiveLevel] = useState<'HS' | 'JH'>('HS');
   
+  const searchParams = useSearchParams();
+  const selectedYear = searchParams.get('year') || 'All';
+  
   const [results, setResults] = useState<ResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageInput, setPageInput] = useState('1');
+
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   // Pagination and Sorting State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
   const [sortConfig, setSortConfig] = useState<{ key: SortColumn; direction: SortDirection }>({
-    key: 'Date',      // Default to Date
-    direction: 'desc' // Default to Most Recent First
+    key: 'Date',      
+    direction: 'desc' 
   });
 
   useEffect(() => {
     setPageInput(currentPage.toString());
   }, [currentPage]);
 
+  useEffect(() => {
+    const fetchYears = async () => {
+      try {
+        const res = await fetch('/api/results/years');
+        if (!res.ok) throw new Error('Failed to fetch years');
+        const data = await res.json();
+        setAvailableYears(data);
+      } catch (error) {
+        console.error("Failed to load result years", error);
+      }
+    };
+    fetchYears();
+  }, []);
+
   // Options for dropdowns
   const [options, setOptions] = useState<{
     runners: RunnerOption[];
     routes: RouteOption[];
     distances: DistanceOption[];
+    years?: number[];
   }>({ runners: [], routes: [], distances: [] });
 
   // Search Form State
@@ -94,12 +117,15 @@ export default function ResultsPage() {
     fetchOptions();
   }, []);
 
-  // Fetch results whenever the level changes or a search is submitted
+  // Fetch results whenever the level, year, or a search is submitted
   const fetchResults = useCallback(async (overrideFilters: FilterPayload | null = null) => {
     setIsLoading(true);
     try {
-      // If no override provided, use current form state + active level
-      const payload = overrideFilters || { ...searchForm, level: activeLevel };
+      const basePayload = overrideFilters || searchForm;
+      
+      // If "All" is selected, send an empty string to clear the year filter
+      const yearToSubmit = selectedYear === 'All' ? '' : selectedYear;
+      const payload = { ...basePayload, level: activeLevel, year: yearToSubmit };
       
       const res = await fetch('/api/results', {
         method: 'POST',
@@ -118,12 +144,11 @@ export default function ResultsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchForm, activeLevel]); 
+  }, [searchForm, activeLevel, selectedYear]);
 
   useEffect(() => {
-    // We pass the level specifically to ensure the initial load is correct even if the form hasn't been touched.
-    fetchResults({ ...searchForm, level: activeLevel });
-}, [activeLevel, fetchResults, searchForm]);
+    fetchResults({ ...searchForm, level: activeLevel, year: selectedYear });
+  }, [activeLevel, selectedYear, fetchResults, searchForm]);
 
   // Sorting Handler
   const handleSort = (key: SortColumn) => {
@@ -139,7 +164,6 @@ export default function ResultsPage() {
   const sortedResults = [...results].sort((a, b) => {
     let primaryDiff = 0;
 
-    // 1. Calculate the primary difference based on the clicked column
     if (sortConfig.key === 'Runner') {
       primaryDiff = a.Runner.localeCompare(b.Runner);
     } else if (sortConfig.key === 'Grade') {
@@ -154,12 +178,10 @@ export default function ResultsPage() {
       primaryDiff = parseFloat(a.FormattedDistance) - parseFloat(b.FormattedDistance);
     }
 
-    // 2. If the primary values are identical, ALWAYS tie-break by Runner Name (A-Z)
     if (primaryDiff === 0 && sortConfig.key !== 'Runner') {
       return a.Runner.localeCompare(b.Runner);
     }
 
-    // 3. Apply the Ascending/Descending modifier to the primary sort
     const modifier = sortConfig.direction === 'asc' ? 1 : -1;
     return primaryDiff * modifier;
   });
@@ -173,7 +195,6 @@ export default function ResultsPage() {
 
   // Group by a unique string that includes the Date
   const groupedByMeet = results.reduce((acc, result) => {
-    // e.g., "Ken Jakalski Mane Event|2024-10-05"
     const uniqueMeetKey = `${result.MeetName}|${result.Date}`; 
     
     if (!acc[uniqueMeetKey]) acc[uniqueMeetKey] = [];
@@ -194,38 +215,52 @@ export default function ResultsPage() {
     return sortConfig.direction === 'asc' ? <ChevronUp size={16} className="inline ml-1" /> : <ChevronDown size={16} className="inline ml-1" />;
   };
 
+  const fallbackYears = Array.from(new Array(10), (_, index) => new Date().getFullYear() - index);
+  const displayYears = availableYears.length > 0 ? availableYears : fallbackYears;
+
   return (
     <main className="w-full min-w-0 max-w-7xl mx-auto px-4 py-8 space-y-8">
       <h1 className="font-heading text-4xl font-extrabold text-lisle-blue tracking-tight drop-shadow-[0_2px_4px_rgba(255,255,255,0.6)]">
         Race Results
       </h1>
 
-      {/* TOP CONTROLS */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-background p-4 rounded-2xl border border-border">
-        
-        {/* View Toggle */}
-        <TabGroup className="md:w-auto">
-          <Tab onClick={() => setActiveView('Meet')} label="By Meet" isActive={activeView === 'Meet'} />
-          <Tab onClick={() => setActiveView('Runner')} label="By Runner" isActive={activeView === 'Runner'} />
-          <Tab onClick={() => setActiveView('Table')} label="All Results" isActive={activeView === 'Table'} />
-        </TabGroup>
+      {/* TOP CONTROLS & FILTERS BLOCK */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-background p-4 rounded-2xl border border-border">
+          
+          {/* View Toggle */}
+          <TabGroup className="md:w-auto">
+            <Tab onClick={() => setActiveView('Meet')} label="By Meet" isActive={activeView === 'Meet'} />
+            <Tab onClick={() => setActiveView('Runner')} label="By Runner" isActive={activeView === 'Runner'} />
+            <Tab onClick={() => setActiveView('Table')} label="All Results" isActive={activeView === 'Table'} />
+          </TabGroup>
 
-        {/* HS vs JH Toggle */}
-        <TabGroup className="md:w-auto">
-          <Tab 
-            onClick={() => setActiveLevel('HS')} 
-            label="High School" 
-            isActive={activeLevel === 'HS'} 
-            className="px-6 py-2.5 flex-1 md:flex-none" 
-          />
-          <Tab 
-            onClick={() => setActiveLevel('JH')} 
-            label="Junior High" 
-            isActive={activeLevel === 'JH'} 
-            className="px-6 py-2.5 flex-1 md:flex-none" 
-          />
-        </TabGroup>
-
+          {/* HS vs JH Toggle */}
+          <TabGroup className="md:w-auto">
+            <Tab 
+              onClick={() => setActiveLevel('HS')} 
+              label="High School" 
+              isActive={activeLevel === 'HS'} 
+              className="px-6 py-2.5 flex-1 md:flex-none" 
+            />
+            <Tab 
+              onClick={() => setActiveLevel('JH')} 
+              label="Junior High" 
+              isActive={activeLevel === 'JH'} 
+              className="px-6 py-2.5 flex-1 md:flex-none" 
+            />
+          </TabGroup>
+          {/* YEAR SELECTOR */}
+          <div className="flex justify-end items-center px-2">
+            <label className="text-sm font-bold text-light-gray mr-3 uppercase tracking-wide">Season Year:</label>
+            <div className="w-48">
+              <YearSelector 
+                years={['All', ...displayYears]} 
+                selectedYear={selectedYear} 
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* SEARCH FORM */}

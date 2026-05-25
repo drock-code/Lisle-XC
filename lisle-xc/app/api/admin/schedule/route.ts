@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import DOMPurify from "isomorphic-dompurify";
-import { getScheduleForYear, insertMeet } from "@/lib/admin-queries";
+import { getScheduleForYear, insertMeetToSchedule } from "@/lib/admin-queries";
 
 // --- GET: Fetch schedule data ---
 export async function GET(request: Request) {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     // Sanitize the HTML! This removes <script> tags and bad attributes while keeping formatting, lists, and images safe.
     const sanitizedInfo = info ? DOMPurify.sanitize(info) : null;
 
-    await insertMeet(meet, date, time, location, level, sanitizedInfo);
+    await insertMeetToSchedule(meet, date, time, location, level, sanitizedInfo);
 
     return NextResponse.json({ success: true, message: "Meet added successfully" });
   } catch (error) {
