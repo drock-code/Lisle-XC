@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     // Construct the public URL securely for the web
     const publicPath = targetPath ? `${targetPath}/${cleanFileName}` : cleanFileName;
-    const fileUrl = `/files/${publicPath}`.replace(/\\/g, '/');
+    const fileUrl = `/api/files/${publicPath}`.replace(/\\/g, '/');
 
     // Return the URL and the name!
     return NextResponse.json({ 
