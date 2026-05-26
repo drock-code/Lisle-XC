@@ -32,11 +32,6 @@ export const metadata: Metadata = {
     default: 'Lisle Cross Country :: Home',
   },
   description: 'News and homepage for the Lisle cross country team. Stay updated with the latest news, schedules, and results.',
-  
-  // Canonical URL
-  alternates: {
-    canonical: '/',
-  },
 
   // Open Graph (For when links are texted or posted on Facebook/Twitter)
   openGraph: {

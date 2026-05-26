@@ -12,10 +12,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   const data = await getRunnerProfile(runnerId);
   if (!data) return { title: 'Runner Not Found' };
+
+  const canonicalPath = `/runners/${resolvedParams.slug}`;
   
   return { 
     title: `${data.runner.Name} - Cross Country Profile`,
-    description: `View ${data.runner.Name}'s cross country race history, personal records, and season trends.`
+    description: `View ${data.runner.Name}'s cross country race history, personal records, and season trends.`,
+    alternates: {
+        canonical: canonicalPath, // Keeps things technically correct even when not indexed
+      },
   };
 }
 

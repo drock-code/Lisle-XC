@@ -1,14 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
 
 export async function GET(
-  request: Request,
-  { params }: { params: { path: string[] } }
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    // Reconstruct the file path from the URL parameters
-    const filePath = path.join(process.cwd(), "public", "files", ...params.path);
+    const resolvedParams = await params;
+
+    const filePath = path.join(process.cwd(), "public", "files", ...resolvedParams.path);
     
     // Read the file from the filesystem
     const fileBuffer = await readFile(filePath);
