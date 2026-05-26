@@ -1,9 +1,20 @@
+import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+
 import { getRoster, getRosterYears, getLatestSeason } from '@/lib/queries';
 import { getGradeName } from '@/lib/utils';
 
 import RunnerCard from '@/components/RunnerCard';
 import { TabGroup, Tab } from '@/components/Tabs';
 import { YearSelector } from '@/components/YearSelector';
+
+export const metadata: Metadata = {
+  title: 'Team Roster',
+  description: 'View the historic and current team rosters for Lisle Cross Country.',
+  alternates: {
+    canonical: '/runners',
+  },
+};
 
 type SearchParams = Promise<{ year?: string; level?: string }>;
 
@@ -17,6 +28,11 @@ export default async function RunnersPage(props: {
   
   const selectedYear = searchParams.year ? parseInt(searchParams.year) : latestSeason;
   const selectedLevel = (searchParams.level as 'HS' | 'JH') || 'HS';
+
+  // Intercept invalid Junior High years before hitting the database
+  if (selectedLevel === 'JH' && selectedYear < 2023) {
+    redirect(`/runners?year=${selectedYear}&level=HS`);
+  }
 
   const roster = await getRoster(selectedYear, selectedLevel);
   const grades = Array.from(new Set(roster.map(r => r.Grade))).sort((a, b) => b - a);
