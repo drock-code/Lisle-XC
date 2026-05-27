@@ -730,24 +730,29 @@ export async function getRoster(
 
 /*************************** SEARCH QUERIES *********************************/
   export async function searchAll(searchTerm: string) {
-  const searchPattern = `%${searchTerm}%`;
+    const searchPattern = `%${searchTerm}%`;
 
-  const [runnerResults, noteResults] = await Promise.all([
-    pool.query<RunnerProfileRow[]>(
-      'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Name` LIKE ? ORDER BY `Name` ASC LIMIT 50',
-      [searchPattern]
-    ),
-    pool.query<NoteSearchResult[]>(
-      'SELECT `Key`, `Title`, `Note`, `Date` FROM Note WHERE `Title` LIKE ? OR `Note` LIKE ? ORDER BY `Date` DESC, `Title` ASC LIMIT 50',
-      [searchPattern, searchPattern]
-    )
-  ]);
+    const [runnerResults, noteResults, faqResults] = await Promise.all([
+      pool.query<RunnerProfileRow[]>(
+        'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Name` LIKE ? AND (`Admin` IS NULL OR `Admin` = 0) ORDER BY `Name` ASC LIMIT 50',
+        [searchPattern]
+      ),
+      pool.query<NoteSearchResult[]>(
+        'SELECT `Key`, `Title`, `Note`, `Date` FROM Note WHERE `Title` LIKE ? OR `Note` LIKE ? ORDER BY `Date` DESC, `Title` ASC LIMIT 50',
+        [searchPattern, searchPattern]
+      ),
+      pool.query<FAQRow[]>(
+        'SELECT `Key`, `Title`, `Content` FROM FAQ WHERE `Title` LIKE ? OR `Content` LIKE ? ORDER BY `Title` ASC LIMIT 50',
+        [searchPattern, searchPattern]
+      )
+    ]);
 
-  return {
-    runners: runnerResults[0],
-    notes: noteResults[0]
-  };
-}
+    return {
+      runners: runnerResults[0],
+      notes: noteResults[0],
+      faqs: faqResults[0], // Pass the new FAQ results back
+    };
+  }
 /*************************** END OF SEARCH QUERIES *********************************/
 
 
