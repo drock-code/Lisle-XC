@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { HelpCircle } from "lucide-react";
 
+import GenericModal from "@/components/GenericModal";
 import RunnerAvatar from '@/components/RunnerAvatar';
 
 import { searchAll } from '@/lib/queries'; 
@@ -30,8 +32,8 @@ export default async function SearchPage({
     );
   }
 
-  const { runners, notes } = await searchAll(query);
-  const hasNoResults = runners.length === 0 && notes.length === 0;
+  const { runners, notes, faqs } = await searchAll(query);
+  const hasNoResults = runners.length === 0 && notes.length === 0 && faqs.length === 0;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -121,7 +123,6 @@ export default async function SearchPage({
                         <div className="text-[11px] font-bold text-light-blue uppercase tracking-widest mb-3">
                           {new Date(note.Date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC'})}
                         </div>
-                        {/* line-clamp-2 automatically truncates the note after 2 lines with an ellipsis */}
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {note.Note.replace(/<[^>]+>/g, '')}
                         </p>
@@ -129,6 +130,44 @@ export default async function SearchPage({
                           Read More <span className="ml-1 group-hover:translate-x-1 transition-transform">→</span>
                         </div>
                       </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* FAQS SECTION */}
+              {faqs.length > 0 && (
+                <div>
+                  <h3 className="font-heading font-bold text-xl text-foreground uppercase tracking-widest mb-6 border-b border-border pb-2">
+                    Frequently Asked Questions
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {faqs.map((faq) => (
+                      <GenericModal 
+                        key={faq.Key}
+                        title={
+                          <div className="flex items-center gap-2">
+                            <HelpCircle className="text-light-blue shrink-0" size={24} />
+                            <span>{faq.Title}</span>
+                          </div>
+                        }
+                        content={faq.Content}
+                        triggerClassName="h-full outline-none"
+                        trigger={
+                          <div className="flex flex-col text-left h-full w-full p-6 rounded-xl bg-background border border-border shadow-md transition-all duration-300 hover:border-light-blue hover:shadow-lg hover:scale-[1.01] group cursor-pointer">
+                            <h4 className="font-heading font-bold text-xl text-foreground group-hover:text-light-blue transition-colors mb-3 flex items-center gap-2">
+                              <HelpCircle className="text-light-blue shrink-0" size={20} />
+                              {faq.Title}
+                            </h4>
+                            <p className="text-sm text-muted-foreground line-clamp-3">
+                              {faq.Content.replace(/<[^>]+>/g, '')}
+                            </p>
+                            <div className="mt-4 pt-4 flex items-center text-xs font-bold uppercase tracking-widest text-light-blue">
+                              Read Answer <span className="ml-1 group-hover:translate-x-1 transition-transform">→</span>
+                            </div>
+                          </div>
+                        }
+                      />
                     ))}
                   </div>
                 </div>
