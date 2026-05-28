@@ -119,47 +119,74 @@ export const PerformanceChart = ({ data }: { data: ChartableResult[] }) => {
       </svg>
 
       {/* Custom Tooltip */}
-      {hoveredIndex !== null && (
-        <div 
-          className="absolute z-20 w-max bg-background text-foreground text-sm rounded-lg py-2 px-3 shadow-xl transform -translate-x-1/2 -translate-y-full pointer-events-none transition-all"
-          style={{ left: `${getX(hoveredIndex)}%`, top: `calc(${getY(data[hoveredIndex].paceSeconds)}% - 12px)` }}
-        >
-          {/* Display Time */}
-          <div className="font-bold text-light-blue mb-1">
-            {data[hoveredIndex].DisplayTime}
-          </div>
-          
-          {/* Lifetime PR */}
-          {data[hoveredIndex].isLifetimePR && (
-            <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold mb-1">
-              {/* Pass dynamic width/height to make it fit text size */}
-              <LifetimePRIcon width="12" height="12" className="shrink-0" />
-              <span>Lifetime PR</span>
-            </div>
-          )}
+      {hoveredIndex !== null && (() => {
+        const xPercent = getX(hoveredIndex);
+        const yPercent = getY(data[hoveredIndex].paceSeconds);
+        
+        // Prevent tooltip from bleeding off the screen on mobile
+        let xOffset = '-50%';
+        let arrowPosition = '50%';
+        
+        if (xPercent > 80) {
+          xOffset = '-90%'; // Shift tooltip body left
+          arrowPosition = '90%'; // Keep arrow pointing at the dot
+        } else if (xPercent < 20) {
+          xOffset = '-10%'; // Shift tooltip body right
+          arrowPosition = '10%'; 
+        }
 
-          {/* Season PR */}
-          {data[hoveredIndex].isSeasonPR && !data[hoveredIndex].isLifetimePR && (
-            <div className="flex items-center gap-1.5 text-green-500 text-xs font-bold mb-1">
-              <SeasonPRIcon width="12" height="12" className="shrink-0" />
-              <span>Season PR</span>
+        return (
+          <div 
+            className="absolute z-20 w-max bg-background text-foreground text-sm rounded-lg py-2 px-3 shadow-xl pointer-events-none transition-all duration-200"
+            style={{ 
+              left: `${xPercent}%`, 
+              top: `calc(${yPercent}% - 12px)`,
+              // Apply our smart offset here, and remove it from Tailwind classes
+              transform: `translate(${xOffset}, -100%)`
+            }}
+          >
+            {/* Display Time */}
+            <div className="font-bold text-light-blue mb-1">
+              {data[hoveredIndex].DisplayTime}
             </div>
-          )}
+            
+            {/* Lifetime PR */}
+            {data[hoveredIndex].isLifetimePR && (
+              <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold mb-1">
+                <LifetimePRIcon width="12" height="12" className="shrink-0" />
+                <span>Lifetime PR</span>
+              </div>
+            )}
 
-          {/* Meet Info */}
-          <div className="text-xs whitespace-nowrap">
-            {data[hoveredIndex].MeetName}
+            {/* Season PR */}
+            {data[hoveredIndex].isSeasonPR && !data[hoveredIndex].isLifetimePR && (
+              <div className="flex items-center gap-1.5 text-green-500 text-xs font-bold mb-1">
+                <SeasonPRIcon width="12" height="12" className="shrink-0" />
+                <span>Season PR</span>
+              </div>
+            )}
+
+            {/* Meet Info */}
+            <div className="text-xs whitespace-nowrap">
+              {data[hoveredIndex].MeetName}
+            </div>
+            
+            {/* Pace Info */}
+            <div className="text-xs mt-1 border-t border-border pt-1">
+              Pace: {data[hoveredIndex].pace}/mi
+            </div>
+            
+            {/* Tooltip Arrow */}
+            <div 
+              className="absolute -bottom-1 w-2 h-2 bg-slate-900 rotate-45"
+              style={{ 
+                left: arrowPosition,
+                transform: 'translateX(-50%)'
+              }}
+            />
           </div>
-          
-          {/* Pace Info */}
-          <div className="text-xs mt-1 border-t border-border pt-1">
-            Pace: {data[hoveredIndex].pace}/mi
-          </div>
-          
-          {/* Tooltip Arrow */}
-          <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

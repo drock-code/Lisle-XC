@@ -80,7 +80,7 @@ export default function RunnerDashboard({
     return Array.from(new Set(filteredResults.map(r => r.Season))).sort((a, b) => b - a);
   }, [filteredResults]);
 
-  // Calculate the valid season on the fly (replaces the useEffect!)
+  // Calculate the valid season on the fly
   const displaySeason = (selectedSeason !== 'Career' && !availableSeasons.includes(selectedSeason)) 
     ? 'Career' 
     : selectedSeason;
@@ -94,14 +94,36 @@ export default function RunnerDashboard({
   // Extract Lifetime PRs for the top cards based on the filtered tab
   const lifetimePRs = useMemo(() => {
     const prs: Record<string, ChartableResult> = {};
-    filteredResults.filter(r => r.isLifetimePR).forEach(r => {
+    
+    filteredResults.filter(r => {
+      if (!r.isLifetimePR) return false;
+
+      // Safely parse the distance string to a number
+      const dist = parseFloat(r.Distance);
+      const unit = r.DistanceUnit?.toLowerCase() || '';
+
+      // Check for 0.5 mile increments
+      if (unit.includes('mile')) {
+        return dist % 0.5 === 0;
+      }
+      
+      // Check for 1K increments
+      if (unit === 'k' || unit.includes('kilometer')) {
+        return dist % 1 === 0;
+      }
+
+      // If it's a weird distance like 2.93 miles, filter it out
+      return false; 
+      
+    }).forEach(r => {
       prs[r.FormattedDistance] = r;
     });
+    
     return prs;
   }, [filteredResults]);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 mt-1.5">
+    <div className="max-w-5xl mx-auto space-y-8 mt-1.5 px-4 sm:px-6 lg:px-8 pb-12">
       
       {/* Header Section */}
       <div className="bg-background rounded-4xl p-6 md:p-10 shadow-sm border border-border flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
@@ -119,31 +141,34 @@ export default function RunnerDashboard({
           </span>
         </div>
         
-        <div className="text-center md:text-left flex-1 w-full mt-2 md:mt-0">
+        <div className="text-center md:text-left flex-1 min-w-0 w-full mt-2 md:mt-0">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
               <h1 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight mb-4">
                 {runner.Name}
               </h1>
               
-              {/* ACCOLADES & BADGES WRAPPER (Grade pill removed from here) */}
+              {/* ACCOLADES & BADGES WRAPPER */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-
-                {/* Captain Badges */}
-                {captains?.map((cap) => (
-                  <span key={cap.Year} className="flex items-center gap-1.5 bg-background border border-border text-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
-                    <Star size={14} className="text-amber-500 fill-amber-500" /> 
-                    Captain ({cap.Year})
-                  </span>
-                ))}
+                {/* Captains Badges */}
+                {[...(captains || [])]
+                  .sort((a, b) => a.Year - b.Year) // Sorts descending (Oldest first)
+                  .map((cap) => (
+                    <span key={cap.Year} className="flex items-center gap-1.5 bg-background border border-border text-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
+                      <Star size={14} className="text-amber-500 fill-amber-500" /> 
+                      Captain ({cap.Year})
+                    </span>
+                  ))}
 
                 {/* Award Badges */}
-                {awards?.map((awd, idx) => (
-                  <span key={idx} className="flex items-center gap-1.5 bg-background border border-border text-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
-                    <Award size={14} className="text-light-blue" /> 
-                    {awd.Award} ({awd.Year})
-                  </span>
-                ))}
+                {[...(awards || [])]
+                  .sort((a, b) => a.Year - b.Year) // Sorts descending (Oldest first)
+                  .map((awd, idx) => (
+                    <span key={idx} className="flex items-center gap-1.5 bg-background border border-border text-foreground px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">
+                      <Award size={14} className="text-light-blue" /> 
+                      {awd.Award} ({awd.Year})
+                    </span>
+                  ))}
 
                 {/* Course Record Badges */}
                 {courseRecords?.map((cr, idx) => (
@@ -205,7 +230,7 @@ export default function RunnerDashboard({
           {Object.entries(lifetimePRs).map(([distance, result]) => (
             <div key={distance} className="bg-background rounded-2xl p-6 border border-border shadow-sm relative overflow-hidden group">
               <p className="text-xs font-bold text-foreground uppercase tracking-widest mb-1 flex items-center gap-2">
-                <Map size={14} /> {distance} PR
+                <Map size={14} /> {distance.replace('Miles', 'Mile')} PR
               </p>
               <h2 className="text-4xl font-extrabold text-light-blue my-2">{result.DisplayTime}</h2>
               <p className="text-sm text-foreground font-medium truncate">{result.MeetName}</p>
