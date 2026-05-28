@@ -40,12 +40,14 @@ export default async function RunnerProfilePage({ params }: { params: Promise<{ 
   const processedResults = processRunnerResults(data.results);
 
   return (
+    <main className="w-full max-w-[100vw] overflow-x-hidden">
       <RunnerDashboard 
-      runner={data.runner} 
-      results={processedResults} 
-      awards={data.awards}             
-      captains={data.captains}         
-      courseRecords={data.courseRecords} 
-    />
+        runner={data.runner} 
+        results={processedResults} 
+        awards={data.awards}             
+        captains={data.captains}         
+        courseRecords={data.courseRecords} 
+      />
+    </main>
   );
 }
