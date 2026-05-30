@@ -50,6 +50,15 @@ export interface MeetRow extends RowDataPacket {
   Season: number;
 }
 
+export interface FAQRow extends RowDataPacket {
+  Key: number;
+  Order: number;
+  Title: string;
+  Content: string;
+  CreatedAt?: Date;
+  UpdatedAt?: Date;
+}
+
 /*************************** ADMIN LOGIN QUERIES *********************************/
   export async function isAdminAndLinkAccount(email: string | null | undefined, googleId: string): Promise<boolean> {
     if (!email) return false;
@@ -577,3 +586,44 @@ export interface MeetRow extends RowDataPacket {
     return results; 
   }
 /*************************** END OF ADMIN RESULT QUERIES *********************************/
+
+/*************************** ADMIN FAQ QUERIES *********************************/
+  export async function getAllFAQs(): Promise<FAQRow[]> {
+    const [rows] = await pool.query<FAQRow[]>(
+      'SELECT * FROM FAQ ORDER BY `Order` ASC'
+    );
+    return rows;
+  }
+
+  export async function insertFAQ(title: string, content: string, order: number) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'INSERT INTO FAQ (Title, Content, `Order`) VALUES (?, ?, ?)',
+      [title, content, order]
+    );
+    return result;
+  }
+
+  export async function updateFAQ(key: number, title: string, content: string) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'UPDATE FAQ SET Title = ?, Content = ? WHERE `Key` = ?',
+      [title, content, key]
+    );
+    return result;
+  }
+
+  export async function deleteFAQ(key: number) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'DELETE FROM FAQ WHERE `Key` = ?',
+      [key]
+    );
+    return result;
+  }
+
+  export async function updateFAQOrder(key: number, order: number) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'UPDATE FAQ SET `Order` = ? WHERE `Key` = ?',
+      [order, key]
+    );
+    return result;
+  }
+/*************************** END OF ADMIN FAQ QUERIES *********************************/

@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy, CalendarDays, PlusCircle } from "lucide-react";
+import { 
+  UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy, 
+  CalendarDays, PlusCircle, HelpCircle, FileText 
+} from "lucide-react";
 
 import { TabGroup, Tab } from "@/components/Tabs";
 import Button from "@/components/Button";
@@ -10,10 +13,12 @@ import EditRunner from "./EditRunner";
 import ManageAwards from "./ManageAwards";
 import ManageSchedule from "./ManageSchedule";
 import AddResults from "./AddResults";
+import FAQManager from "./ManageFAQs";
 
 type TabType = 'pages' | 'runners' | 'website';
 type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
 type WebsiteViewType = 'schedule' | 'settings' | 'results';
+type PageViewType = 'faqs' | 'home';
 
 interface DashboardProps {
   userName: string;
@@ -23,6 +28,7 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('runners');
   const [rosterView, setRosterView] = useState<RosterViewType>('add');
   const [websiteView, setWebsiteView] = useState<WebsiteViewType>('schedule');
+  const [pageView, setPageView] = useState<PageViewType>('faqs');
   const [selectedMeetKey, setSelectedMeetKey] = useState<number | undefined>(undefined);
 
   return (
@@ -39,8 +45,8 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
       <div className="mb-10 w-full md:w-auto inline-block">
         <TabGroup>
           <Tab label="Pages" isActive={activeTab === 'pages'} onClick={() => setActiveTab('pages')} />
+          <Tab label="Results" isActive={activeTab === 'website'} onClick={() => setActiveTab('website')} />
           <Tab label="Runners" isActive={activeTab === 'runners'} onClick={() => setActiveTab('runners')} />
-          <Tab label="Website" isActive={activeTab === 'website'} onClick={() => setActiveTab('website')} />
         </TabGroup>
       </div>
 
@@ -60,9 +66,32 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
             
             <p className="text-sm text-light-gray leading-relaxed mb-6">
               {activeTab === 'runners' && "Manage your athlete database, update profiles, and build seasonal rosters."}
-              {activeTab === 'pages' && "Edit home page content and race recaps."}
+              {activeTab === 'pages' && "Edit home page content, FAQs, and race recaps."}
               {activeTab === 'website' && "Update your season schedule, global links, and site dates."}
             </p>
+
+            {/* Pages Sub-Navigation */}
+            {activeTab === 'pages' && (
+              <div className="flex flex-col gap-3 border-t border-border pt-4">
+                <Button 
+                  size="sm" 
+                  isActive={pageView === 'faqs'} 
+                  onClick={() => setPageView('faqs')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <HelpCircle size={18} /> Manage FAQs
+                </Button>
+                
+                <Button 
+                  size="sm" 
+                  isActive={pageView === 'home'} 
+                  onClick={() => setPageView('home')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <FileText size={18} /> Home Page Content
+                </Button>
+              </div>
+            )}
 
             {/* Runners Sub-Navigation */}
             {activeTab === 'runners' && (
@@ -105,7 +134,7 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
               </div>
             )}
 
-            {/* Website Sub-Navigation */}
+            {/* Results Sub-Navigation */}
             {activeTab === 'website' && (
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <Button 
@@ -142,6 +171,16 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
         {/* RIGHT COLUMN: Dynamic Content Area */}
         <div className="md:col-span-8">
           
+          {/* Pages Views */}
+          {activeTab === 'pages' && pageView === 'faqs' && <FAQManager />}
+          
+          {activeTab === 'pages' && pageView === 'home' && (
+             <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground">
+               <Layout size={48} className="mx-auto mb-4 opacity-20" />
+               <p className="font-bold uppercase tracking-widest text-xs text-light-gray">Home Page Editor Coming Soon</p>
+             </div>
+          )}
+
           {/* Runners Views */}
           {activeTab === 'runners' && rosterView === 'add' && <AddRunner />}
           {activeTab === 'runners' && rosterView === 'edit' && <EditRunner />}
@@ -154,30 +193,19 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
             </section>
           )}
 
-          {/* Pages Views */}
-          {activeTab === 'pages' && (
-             <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground">
-               <Layout size={48} className="mx-auto mb-4 opacity-20" />
-               <p className="font-bold uppercase tracking-widest text-xs text-light-gray">Page Editor Coming Soon</p>
-             </div>
-          )}
-
           {/* Website Views */}
           {activeTab === 'website' && websiteView === 'schedule' && <ManageSchedule />}
           
-          {/* Render the AddResults component when selected */}
           {activeTab === 'website' && websiteView === 'results' && (
             <AddResults initialMeetKey={selectedMeetKey} />
           )}
           
-          {/* Website Settings Fallback */}
           {activeTab === 'website' && websiteView === 'settings' && (
             <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground">
               <Globe size={48} className="mx-auto mb-4 opacity-20" />
               <p className="font-bold uppercase tracking-widest text-xs text-light-gray">Site Settings Coming Soon</p>
             </div>
           )}
-          
         </div>
       </div>
     </main>
