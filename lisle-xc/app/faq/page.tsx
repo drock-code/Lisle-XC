@@ -5,6 +5,8 @@ export const metadata = {
   title: 'Frequently Asked Questions',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function FAQPage() {
   const faqs = await getFAQs();
 
