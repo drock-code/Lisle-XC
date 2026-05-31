@@ -121,7 +121,18 @@ export default function AddResults({ initialMeetKey }: { initialMeetKey?: number
   const autoMatchRunner = (rawName: string): { key: number | string; grade: number | string } => {
     const cleanName = rawName.toLowerCase().replace(/[^a-z\s]/g, "").trim();
     const match = runners.find(r => r.Name.toLowerCase() === cleanName);
-    return match ? { key: match.Key, grade: match.Grade || "" } : { key: "", grade: "" };
+    
+    if (match && match.GraduationYear) {
+      // Calculate dynamic grade based on the currently selected season year
+      const dynamicGrade = 13 - match.GraduationYear + currentYear;
+      
+      return { 
+        key: match.Key, 
+        grade: dynamicGrade 
+      };
+    }
+    
+    return { key: "", grade: "" };
   };
 
   // --- URL SCRAPE HANDLER ---
