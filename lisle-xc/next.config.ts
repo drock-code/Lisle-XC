@@ -176,9 +176,9 @@ const nextConfig: NextConfig = {
     return [
       ...noteRedirects,
       ...runnerRedirects,
+      { source: '/run', destination: 'https://docs.google.com/forms/d/e/1FAIpQLSewJjyCu9CBUw_8HgzlZ-lowE6gjqpPiWREXaTg6YQpQWbRUA/viewform?usp=dialog', permanent: false},
       { source: '/faq.php', destination: '/faq', permanent: true },
       { source: '/schedule.php', destination: '/schedule', permanent: true },
-      { source: '/results.php', destination: '/results', permanent: true },
       { source: '/results.php', destination: '/results', permanent: true },
       // This catches anyone going to records.php WITHOUT a runner ID or the index page without an ID
       { source: '/records.php', destination: '/records', permanent: true }, 
