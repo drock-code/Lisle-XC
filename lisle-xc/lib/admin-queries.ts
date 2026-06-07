@@ -561,18 +561,31 @@ export interface FAQRow extends RowDataPacket {
   }
 
   export async function getMeets(year?: number): Promise<MeetRow[]> {
-    let query: string;
-    let queryParams: number[] = [];
-
     if (year) {
-      query = 'SELECT MeetKey, Name AS Meet, Date, Season FROM Meet WHERE Season = ? ORDER BY Date ASC';
-      queryParams = [year];
-    } else {
-      query = 'SELECT MeetKey, Name AS Meet, Date, Season FROM Meet ORDER BY Date ASC';
-    }
+      // Silently sync meets from the Schedule table for this year
+      const syncQuery = `
+        INSERT INTO Meet (Name, Date, Season)
+        SELECT s.Meet, s.Date, YEAR(s.Date)
+        FROM Schedule s
+        WHERE YEAR(s.Date) = ?
+        AND NOT EXISTS (
+            SELECT 1 FROM Meet m 
+            WHERE m.Name = s.Meet AND m.Season = YEAR(s.Date)
+        )
+      `;
+      await pool.query(syncQuery, [year]);
 
-    const [rows] = await pool.query<MeetRow[]>(query, queryParams);
-    return rows;
+      // Fetch the newly synced, complete list of Meets
+      const fetchQuery = 'SELECT MeetKey, Name AS Meet, Date, Season FROM Meet WHERE Season = ? ORDER BY Date ASC';
+      const [rows] = await pool.query<MeetRow[]>(fetchQuery, [year]);
+      return rows;
+      
+    } else {
+      // Fallback if no year is provided (fetches everything)
+      const query = 'SELECT MeetKey, Name AS Meet, Date, Season FROM Meet ORDER BY Date ASC';
+      const [rows] = await pool.query<MeetRow[]>(query);
+      return rows;
+    }
   }
 
   export async function getExistingMeetResults(meetKey: number, routeKey: number) {
