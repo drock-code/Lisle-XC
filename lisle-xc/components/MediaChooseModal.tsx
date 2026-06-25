@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { toTitleCase } from "@/lib/utils";
 
 interface MediaChooserModalProps {
   isOpen: boolean;
@@ -115,7 +116,7 @@ export default function MediaChooserModal({ isOpen, onClose, onSelect, type, tar
               className="p-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-lisle-blue"
             />
             <button type="button" onClick={() => handleConfirm(customUrl)} className="bg-lisle-blue cursor-pointer text-white p-2 rounded-md hover:opacity-90 font-bold text-sm">
-              Link {type}
+              Link {toTitleCase(type)}
             </button>
           </div>
         )}

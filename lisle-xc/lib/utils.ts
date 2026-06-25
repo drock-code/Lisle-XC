@@ -62,3 +62,9 @@ export const formatRaceTime = (timeStr: string | null | undefined): string => {
     .replace(/^00:/, '')
     .replace(/^0/, '');
 };
+
+export const toTitleCase = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/\b\w/g, (s) => s.toUpperCase());
+};
