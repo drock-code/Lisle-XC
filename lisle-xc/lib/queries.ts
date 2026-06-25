@@ -432,7 +432,7 @@ export interface TravelInfoRow {
   }
 
   export async function getLatestSeason() {
-    const [rows] = await pool.query<RowDataPacket[]>('SELECT MAX(Season) as Latest FROM Meet');
+    const [rows] = await pool.query<RowDataPacket[]>('SELECT MAX(SeasonYear) as Latest FROM TeamRoster');
     return rows[0].Latest as number;
   }
 
