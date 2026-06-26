@@ -1,25 +1,6 @@
 import { pool } from '@/lib/db';
 import type { RowDataPacket } from 'mysql2';
 
-const COURSE_NAME_MAPPING = `
-  CASE 
-    WHEN ro.Name IN ('Richard Spring Invite', 'IHSA 1A State') THEN ' Detweiller Park, Peoria'
-    WHEN ro.Name IN ('Joliet Central Steelmen Invite') THEN 'Channahon Community Park'
-    WHEN ro.Name IN ('SDEAA Conference Championship @ Jefferson', 'Jefferson') THEN 'Jefferson'
-    WHEN ro.Name IN ('Herscher Invite') THEN 'Limestone Park, Herscher'
-    WHEN ro.Name IN ('IHSA 1A Westmont Regional') THEN 'Westmont High School'
-    WHEN ro.Name IN ('ICE Conference') THEN 'Eastwood Golf Course, Streator'
-    WHEN ro.Name IN ('Yorkville Invite') THEN 'Hoover Forest Preserve, Yorkville'
-    WHEN ro.Name IN ('IESA State Championship') THEN ' Maxwell Park, Normal'
-    WHEN ro.Name IN ('IESA Sectional @ Bolingbrook Central Park') THEN 'Bolingbrook Central Park'
-    WHEN ro.Name IN ('Elmwood Park Tiger Invite') THEN 'Elmwood Park High School'
-    WHEN ro.Name IN ('SDEAA Conference Championship @ Community Park', 'Home Meet @ Community Park', 'IESA Sectional @ Community Park', 'Lisle Mane Event', 'Ken Jakalski Mane Event', 'IHSA 1A Lisle Regional', 'IHSA 1A Lisle Sectional') THEN '  Lisle Community Park'
-    WHEN ro.Name IN ('Harvest Christian Academy Fall Classic', 'Harvest-Westminster Fall Classic') THEN 'Harvest-Westminster Academy, Elgin'
-    WHEN ro.Name IN ('IHSA 1A Bishop McNamara Regional', 'IHSA 1A Bishop McNamara Sectional') THEN 'Kankakee Country Club'
-    ELSE ro.Name 
-  END
-`;
-
 export interface AwardYear extends RowDataPacket {
   Year: number;
 }
@@ -388,11 +369,12 @@ export interface TravelInfoRow {
     const query = `
       WITH MappedRoutes AS (
         SELECT 
-          ${COURSE_NAME_MAPPING} as CourseName,
+          ro.Name as CourseName,
           ro.Distance,
           ro.DistanceUnit,
           r.Gender,
           rr.Grade,
+          CASE WHEN rr.Grade <= 8 THEN 'JH' ELSE 'HS' END as Level,
           r.Key as RunnerKey,
           r.Name as RunnerName,
           rr.Time,
@@ -404,13 +386,63 @@ export interface TravelInfoRow {
         WHERE rr.Time != '00:00:00' AND ro.Name IS NOT NULL
         AND ro.Name NOT IN ('Jefferson (1 Mile)', 'Jane Addams (1 Mile)')
       ),
+      DistanceStats AS (
+        -- 1. Gather every distance run at each course and find the latest date for THAT specific distance
+        SELECT 
+          CourseName,
+          Level,
+          Distance, 
+          DistanceUnit,
+          MAX(Date) as LastRunDate,
+          -- 2. Set preferences so 5K/3M always beat non-standard distances
+          CASE 
+            -- High School Preferences
+            WHEN Level = 'HS' AND (Distance = 3 AND DistanceUnit = 'Miles') THEN 1
+            WHEN Level = 'HS' AND (Distance = 3.1 AND DistanceUnit = 'Miles') THEN 1
+            WHEN Level = 'HS' AND (Distance = 5 AND DistanceUnit = 'Kilometers') THEN 1
+            WHEN Level = 'HS' AND (Distance = 5000 AND DistanceUnit = 'Meters') THEN 1
+            
+            -- Junior High Preferences
+            WHEN Level = 'JH' AND (Distance = 2 AND DistanceUnit = 'Miles') THEN 1
+            WHEN Level = 'JH' AND (Distance = 3200 AND DistanceUnit = 'Meters') THEN 1
+            ELSE 2
+          END as Preference
+        FROM MappedRoutes
+        GROUP BY CourseName, Level, Distance, DistanceUnit
+      ),
+      ActiveCourseDistances AS (
+        -- 3. Pick the winning distance. 
+        -- Priority 1: Preferred Distance (Preference ASC)
+        -- Priority 2: If there's a tie (e.g., both 5K and 3M exist), use the most recent one (LastRunDate DESC)
+        SELECT 
+          CourseName, 
+          Level,
+          Distance, 
+          DistanceUnit,
+          ROW_NUMBER() OVER(
+            PARTITION BY CourseName, Level 
+            ORDER BY Preference ASC, LastRunDate DESC
+          ) as rn
+        FROM DistanceStats
+      ),
+      FilteredRoutes AS (
+        -- 4. Filter the original results to ONLY include times run at the winning distance
+        SELECT m.*
+        FROM MappedRoutes m
+        JOIN ActiveCourseDistances acd 
+          ON m.CourseName = acd.CourseName 
+         AND m.Level = acd.Level
+         AND (m.Distance = acd.Distance OR (m.Distance IS NULL AND acd.Distance IS NULL))
+         AND (m.DistanceUnit = acd.DistanceUnit OR (m.DistanceUnit IS NULL AND acd.DistanceUnit IS NULL))
+        WHERE acd.rn = 1
+      ),
       RankedRecords AS (
-        -- Rank routes using the newly unified CourseName
+        -- 5. Rank the times for the active distance
         SELECT *,
           ROW_NUMBER() OVER(PARTITION BY CourseName, Gender, Grade ORDER BY Time ASC) as rn
-        FROM MappedRoutes
+        FROM FilteredRoutes
       )
-      -- Return only the #1 times
+      -- 6. Return only the #1 times
       SELECT * FROM RankedRecords 
       WHERE rn = 1
       ORDER BY CourseName ASC, Grade DESC;
@@ -418,7 +450,7 @@ export interface TravelInfoRow {
 
     const [results] = await pool.query<CourseRecordRow[]>(query);
     return results;
-  }
+}
 
 /*************************** END OF RECORDS QUERIES *********************************/
 
@@ -562,76 +594,75 @@ export interface TravelInfoRow {
 
 /*************************** RUNNER PROFILE QUERIES *********************************/
   export async function getRunnerProfile(runnerId: number | string) {
-  // Fetch the basic runner information first
-  const [runnerRows] = await pool.query<RunnerProfileRow[]>(
-    'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Key` = ?',
-    [runnerId]
-  );
+    // Fetch the basic runner information first
+    const [runnerRows] = await pool.query<RunnerProfileRow[]>(
+      'SELECT `Key`, `Name`, `Grade`, `Gender`, `AvatarURL` FROM Runner WHERE `Key` = ?',
+      [runnerId]
+    );
 
-  if (runnerRows.length === 0) {
-    return null;
-  }
+    if (runnerRows.length === 0) {
+      return null;
+    }
 
-  // Fetch all related data concurrently
-  const [
-    [resultRows],
-    [awardRows],
-    [captainRows],
-    [crRows]
-  ] = await Promise.all([
-    // Race Results
-    pool.query<RunnerResultRow[]>(
-      `SELECT 
-          m.Name AS MeetName, m.Date, m.Season, rt.Distance, rt.DistanceUnit, rr.Time, rr.Grade, mr.JH
-      FROM RunnerResult rr
-      JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-      JOIN Meet m ON mr.MeetID = m.MeetKey
-      JOIN Route rt ON mr.RouteKey = rt.RouteKey
-      WHERE rr.RunnerID = ? AND rr.Time != '00:00:00'
-      ORDER BY m.Date ASC`,
-      [runnerId]
-    ),
-    // Awards
-    pool.query<RunnerAwardRow[]>(
-      `SELECT Award, Year, IsJH FROM RunnerAward WHERE RunnerKey = ? ORDER BY Year DESC, Award ASC`,
-      [runnerId]
-    ),
-    // Captain
-    pool.query<CaptainRow[]>(
-      `SELECT Year FROM Captain WHERE RunnerKey = ? ORDER BY Year DESC`,
-      [runnerId]
-    ),
-    // Course Records
-    pool.query<CourseRecordRow[]>(
-      `WITH MappedRoutes AS (
-        SELECT 
-          ${COURSE_NAME_MAPPING} as CourseName, r.Gender, rr.Grade, r.Key as RunnerKey, rr.Time
+    // Fetch all related data concurrently
+    const [
+      [resultRows],
+      [awardRows],
+      [captainRows],
+      [crRows]
+    ] = await Promise.all([
+      // Race Results
+      pool.query<RunnerResultRow[]>(
+        `SELECT 
+            m.Name AS MeetName, m.Date, m.Season, rt.Distance, rt.DistanceUnit, rr.Time, rr.Grade, mr.JH
         FROM RunnerResult rr
-        JOIN Runner r ON rr.RunnerID = r.Key
         JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
-        JOIN Route ro ON mr.RouteKey = ro.RouteKey
-        WHERE rr.Time != '00:00:00' AND ro.Name IS NOT NULL
-        AND ro.Name NOT IN ('Jefferson (1 Mile)', 'Jane Addams (1 Mile)')
+        JOIN Meet m ON mr.MeetID = m.MeetKey
+        JOIN Route rt ON mr.RouteKey = rt.RouteKey
+        WHERE rr.RunnerID = ? AND rr.Time != '00:00:00'
+        ORDER BY m.Date ASC`,
+        [runnerId]
       ),
-      RankedRecords AS (
-        SELECT *, ROW_NUMBER() OVER(PARTITION BY CourseName, Gender, Grade ORDER BY Time ASC) as rn
-        FROM MappedRoutes
+      // Awards
+      pool.query<RunnerAwardRow[]>(
+        `SELECT Award, Year, IsJH FROM RunnerAward WHERE RunnerKey = ? ORDER BY Year DESC, Award ASC`,
+        [runnerId]
+      ),
+      // Captain
+      pool.query<CaptainRow[]>(
+        `SELECT Year FROM Captain WHERE RunnerKey = ? ORDER BY Year DESC`,
+        [runnerId]
+      ),
+      // Course Records
+      pool.query<CourseRecordRow[]>(
+        `WITH MappedRoutes AS (
+          SELECT 
+            ro.Name as CourseName, r.Gender, rr.Grade, r.Key as RunnerKey, rr.Time
+          FROM RunnerResult rr
+          JOIN Runner r ON rr.RunnerID = r.Key
+          JOIN MeetRace mr ON rr.RaceID = mr.RaceKey
+          JOIN Route ro ON mr.RouteKey = ro.RouteKey
+          WHERE rr.Time != '00:00:00' AND ro.Name IS NOT NULL
+        ),
+        RankedRecords AS (
+          SELECT *, ROW_NUMBER() OVER(PARTITION BY CourseName, Gender, Grade ORDER BY Time ASC) as rn
+          FROM MappedRoutes
+        )
+        SELECT CourseName, Grade, Time FROM RankedRecords 
+        WHERE rn = 1 AND RunnerKey = ?
+        ORDER BY Grade DESC, CourseName ASC;`,
+        [runnerId]
       )
-      SELECT CourseName, Grade, Time FROM RankedRecords 
-      WHERE rn = 1 AND RunnerKey = ?
-      ORDER BY Grade DESC, CourseName ASC;`,
-      [runnerId]
-    )
-  ]);
+    ]);
 
-  return {
-    runner: runnerRows[0],
-    results: resultRows,
-    awards: awardRows,
-    captains: captainRows,
-    courseRecords: crRows
-  };
-}
+    return {
+      runner: runnerRows[0],
+      results: resultRows,
+      awards: awardRows,
+      captains: captainRows,
+      courseRecords: crRows
+    };
+  }
 
   export async function getRosterYears(): Promise<number[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -640,30 +671,30 @@ export interface TravelInfoRow {
     return rows.map(r => r.SeasonYear);
   }
 
-export async function getRoster(
-  year: number, 
-  level: 'HS' | 'JH',
-  sortBy: 'grade' | 'name' = 'grade'
-) {
-  const orderClause = sortBy === 'name' 
-    ? 'ORDER BY r.Name ASC' 
-    : 'ORDER BY tr.Grade DESC, r.Name ASC';
+  export async function getRoster(
+    year: number, 
+    level: 'HS' | 'JH',
+    sortBy: 'grade' | 'name' = 'grade'
+  ) {
+    const orderClause = sortBy === 'name' 
+      ? 'ORDER BY r.Name ASC' 
+      : 'ORDER BY tr.Grade DESC, r.Name ASC';
 
-  const [rows] = await pool.query<RunnerProfileRow[]>(`
-    SELECT 
-      r.\`Key\`, 
-      r.Name, 
-      r.AvatarURL, 
-      r.Gender,
-      tr.Grade
-    FROM Runner r
-    JOIN TeamRoster tr ON r.\`Key\` = tr.RunnerKey
-    WHERE tr.SeasonYear = ? AND tr.Level = ?
-    ${orderClause}
-  `, [year, level]);
+    const [rows] = await pool.query<RunnerProfileRow[]>(`
+      SELECT 
+        r.\`Key\`, 
+        r.Name, 
+        r.AvatarURL, 
+        r.Gender,
+        tr.Grade
+      FROM Runner r
+      JOIN TeamRoster tr ON r.\`Key\` = tr.RunnerKey
+      WHERE tr.SeasonYear = ? AND tr.Level = ?
+      ${orderClause}
+    `, [year, level]);
 
-  return rows;
-}
+    return rows;
+  }
 /*************************** END OF RUNNER PROFILE QUERIES *********************************/
 
 /*************************** SCHEDULE QUERIES *********************************/

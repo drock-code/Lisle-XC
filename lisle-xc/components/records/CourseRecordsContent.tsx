@@ -11,32 +11,39 @@ interface CourseRecordsContentProps {
 }
 
 type GradeRecord = { M?: CourseRecordRow; F?: CourseRecordRow };
+
 type GroupedCourse = {
   courseName: string;
+  level: 'HS' | 'JH'; 
   distanceInfo: string;
   grades: Record<number, GradeRecord>;
 };
 
-// State meet courses will ALWAYS be shown and have a unique badge
 const STATE_COURSES = [' Detweiller Park, Peoria', ' Maxwell Park, Normal']; 
 
 export default function CourseRecordsContent({ records }: CourseRecordsContentProps) {
   const [activeLevel, setActiveLevel] = useState<'HS' | 'JH'>('HS');
   
   const groupedRecords = records.reduce((acc: Record<string, GroupedCourse>, row) => {
-    if (!acc[row.CourseName]) {
-      acc[row.CourseName] = {
+    const rowLevel = row.Grade <= 8 ? 'JH' : 'HS';
+    
+    // Create a unique key that separates HS and JH courses!
+    const uniqueKey = `${row.CourseName}-${rowLevel}`;
+
+    if (!acc[uniqueKey]) {
+      acc[uniqueKey] = {
         courseName: row.CourseName,
+        level: rowLevel,
         distanceInfo: row.Distance ? `${Number(row.Distance)} ${row.DistanceUnit || 'Miles'}` : 'Unknown Distance',
         grades: {},
       };
     }
     
-    if (!acc[row.CourseName].grades[row.Grade]) {
-      acc[row.CourseName].grades[row.Grade] = {};
+    if (!acc[uniqueKey].grades[row.Grade]) {
+      acc[uniqueKey].grades[row.Grade] = {};
     }
     
-    acc[row.CourseName].grades[row.Grade][row.Gender as 'M' | 'F'] = row;
+    acc[uniqueKey].grades[row.Grade][row.Gender as 'M' | 'F'] = row;
     
     return acc;
   }, {});
@@ -52,23 +59,21 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
     8: '8th Grade', 7: '7th Grade', 6: '6th Grade'
   };
 
-  // Filter the courses based on your new rules
   const visibleCourses = allCourses.filter(course => {
-    const isStateCourse = STATE_COURSES.includes(course.courseName);
+    // Immediately hide courses that don't belong to the active tab
+    if (course.level !== activeLevel) return false;
 
-    // First, ensure the course has at least ONE record for this level.
+    const isStateCourse = STATE_COURSES.includes(course.courseName);
     const hasAnyRecordForLevel = displayGrades.some(
       grade => course.grades[grade]?.M || course.grades[grade]?.F
     );
 
     if (!hasAnyRecordForLevel) return false;
 
-    // Check if it has a record at EVERY grade and gender level for the active tab.
     const hasEveryGrade = displayGrades.every(
       grade => course.grades[grade]?.M && course.grades[grade]?.F
     );
 
-    // Keep it if it has every grade, OR if it's a State course
     return hasEveryGrade || isStateCourse;
   });
 
@@ -100,9 +105,10 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
       {/* Grid of Cards */}
       {visibleCourses.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {visibleCourses.map((course) => (
+          {visibleCourses.map((course, index) => (
+            // Use index or the unique key for the React loop to prevent duplication errors
             <div 
-              key={course.courseName} 
+              key={`${course.courseName}-${index}`} 
               className="bg-background rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col"
             >
               {/* Card Header */}
@@ -111,7 +117,6 @@ export default function CourseRecordsContent({ records }: CourseRecordsContentPr
                   <h3 className="font-bold text-lg text-foreground">{course.courseName}</h3>
                   <p className="text-sm font-medium text-muted-foreground">{course.distanceInfo}</p>
                 </div>
-                {/* Badge to indicate it's a State course */}
                 {STATE_COURSES.includes(course.courseName) && (
                   <span className="text-[10px] uppercase font-bold tracking-wider bg-background text-foreground border border-border px-2 py-1 rounded-md">
                     State Course
