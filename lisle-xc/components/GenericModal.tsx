@@ -1,25 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import RichTextContent from "@/components/RichTextContent";
 
 interface GenericModalProps {
-  title: React.ReactNode;      // The title in the modal header (allows text or icons)
-  content: string;             // The raw HTML string to display inside
-  trigger: React.ReactNode;    // What the user clicks on to open the modal
-  triggerClassName?: string;   // Optional custom styling for the trigger button
+  title: React.ReactNode;
+  content?: string;             
+  children?: React.ReactNode;   
+  trigger: React.ReactNode;
+  triggerClassName?: string;
+  maxWidthClass?: string;       
+  bodyClassName?: string;       
 }
 
 export default function GenericModal({ 
   title, 
   content, 
+  children,
   trigger, 
-  triggerClassName = "" 
+  triggerClassName = "",
+  maxWidthClass = "max-w-lg",         // Defaults to your original size
+  bodyClassName = "p-6 max-h-[70vh]"  // Defaults to your original padding
 }: GenericModalProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   return (
     <>
@@ -41,7 +57,7 @@ export default function GenericModal({
             onClick={() => setIsOpen(false)} 
           />
 
-          <div className="relative bg-background rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 z-10">
+          <div className={`relative bg-background rounded-2xl shadow-2xl w-full ${maxWidthClass} overflow-hidden animate-in fade-in zoom-in duration-200 z-10 flex flex-col`}>
             
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-background">
@@ -57,10 +73,13 @@ export default function GenericModal({
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
-              <div className="text-sm text-foreground leading-relaxed space-y-3 [&_a]:text-light-blue [&_a]:underline [&_a:hover]:text-foreground transition-colors">
-                <RichTextContent content={content} />
-              </div>
+            <div className={`overflow-y-auto ${bodyClassName}`}>
+              {/* If children are passed (like our Map), render them. Otherwise, render RichText. */}
+              {children ? children : (
+                <div className="text-sm text-foreground leading-relaxed space-y-3 [&_a]:text-light-blue [&_a]:underline [&_a:hover]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_h4]:text-foreground [&_h5]:text-foreground [&_h6]:text-foreground transition-colors">
+                  {content && <RichTextContent content={content} />}
+                </div>
+              )}
             </div>
           </div>
         </div>,
