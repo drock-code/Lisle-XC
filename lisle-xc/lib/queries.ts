@@ -91,7 +91,6 @@ export interface NoteRow extends RowDataPacket {
   Date: Date;
   Title: string;
   Note: string;
-  Image: string | null;
 }
 
 export interface NoteSearchResult extends RowDataPacket {
@@ -209,7 +208,7 @@ export interface TravelInfoRow {
 
     // Get the single post for this page
     const [posts] = await pool.query<RowDataPacket[]>(
-      'SELECT `Key`, `Date`, `Title`, `Note`, `Image` FROM Note ORDER BY `Date` DESC LIMIT ? OFFSET ?',
+      'SELECT `Key`, `Date`, `Title`, `Note` FROM Note ORDER BY `Date` DESC LIMIT ? OFFSET ?',
       [limit, offset]
     );
 
@@ -229,7 +228,7 @@ export interface TravelInfoRow {
 
   export async function getNoteByKey(key: number) {
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT `Key`, `Date`, `Title`, `Note`, `Image` FROM Note WHERE `Key` = ?',
+      'SELECT `Key`, `Date`, `Title`, `Note` FROM Note WHERE `Key` = ?',
       [key]
     );
     return rows[0] || null;

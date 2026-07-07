@@ -59,6 +59,15 @@ export interface FAQRow extends RowDataPacket {
   UpdatedAt?: Date;
 }
 
+export interface NoteRow extends RowDataPacket {
+  Key: number;
+  Date: string | Date;
+  Title: string;
+  Note: string;
+  CreatedAt?: Date;
+  UpdatedAt?: Date;
+}
+
 /*************************** ADMIN LOGIN QUERIES *********************************/
   export async function isAdminAndLinkAccount(email: string | null | undefined, googleId: string): Promise<boolean> {
     if (!email) return false;
@@ -640,3 +649,36 @@ export interface FAQRow extends RowDataPacket {
     return result;
   }
 /*************************** END OF ADMIN FAQ QUERIES *********************************/
+
+/*************************** ADMIN NOTE QUERIES *********************************/
+  export async function getAllNotes(): Promise<NoteRow[]> {
+    const [rows] = await pool.query<NoteRow[]>(
+      'SELECT * FROM Note ORDER BY Date DESC, CreatedAt DESC'
+    );
+    return rows;
+  }
+
+  export async function insertNote(date: string, title: string, note: string) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'INSERT INTO Note (Date, Title, Note) VALUES (?, ?, ?)',
+      [date, title, note]
+    );
+    return result;
+  }
+
+  export async function updateNote(key: number, date: string, title: string, note: string) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'UPDATE Note SET Date = ?, Title = ?, Note = ? WHERE `Key` = ?',
+      [date, title, note, key]
+    );
+    return result;
+  }
+
+  export async function deleteNote(key: number) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'DELETE FROM Note WHERE `Key` = ?',
+      [key]
+    );
+    return result;
+  }
+/*************************** END OF ADMIN NOTE QUERIES *********************************/

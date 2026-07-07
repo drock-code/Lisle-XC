@@ -72,7 +72,7 @@ const SortableFAQItem = ({
         <h4 className="font-bold text-foreground text-lg group-hover:text-lisle-blue transition-colors truncate">
           {faq.Title}
         </h4>
-        <p className="text-sm text-light-gray truncate max-w-2xl mt-1">
+        <p className="text-sm group-hover:text-lisle-blue truncate max-w-2xl mt-1">
           {faq.Content.replace(/<[^>]+>/g, '')}
         </p>
       </div>
