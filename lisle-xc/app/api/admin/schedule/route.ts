@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { getScheduleForYear, insertMeetToSchedule } from "@/lib/admin-queries";
 
 // --- GET: Fetch schedule data ---
@@ -32,7 +32,15 @@ export async function POST(request: Request) {
     }
 
     // Sanitize the HTML! This removes <script> tags and bad attributes while keeping formatting, lists, and images safe.
-    const sanitizedInfo = info ? DOMPurify.sanitize(info) : null;
+    const sanitizedInfo = info ? sanitizeHtml(info, {
+      // This allows the standard TipTap formatting
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2']),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        '*': ['class', 'style', 'href', 'target'], // Allows your Tailwind classes to pass through
+        'img': ['src', 'alt']
+      }
+    }) : null;
 
     await insertMeetToSchedule(meet, date, time, location, level, sanitizedInfo);
 

@@ -14,6 +14,7 @@ import ManageAwards from "./ManageAwards";
 import ManageSchedule from "./ManageSchedule";
 import AddResults from "./AddResults";
 import FAQManager from "./ManageFAQs";
+import ManageHomeNotes from "./ManageHomeNotes";
 
 type TabType = 'pages' | 'runners' | 'website';
 type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
@@ -75,20 +76,20 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
               <div className="flex flex-col gap-3 border-t border-border pt-4">
                 <Button 
                   size="sm" 
-                  isActive={pageView === 'faqs'} 
-                  onClick={() => setPageView('faqs')}
-                  className="w-full justify-start! gap-3"
-                >
-                  <HelpCircle size={18} /> Manage FAQs
-                </Button>
-                
-                <Button 
-                  size="sm" 
                   isActive={pageView === 'home'} 
                   onClick={() => setPageView('home')}
                   className="w-full justify-start! gap-3"
                 >
                   <FileText size={18} /> Home Page Content
+                </Button>
+
+                <Button 
+                  size="sm" 
+                  isActive={pageView === 'faqs'} 
+                  onClick={() => setPageView('faqs')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <HelpCircle size={18} /> Manage FAQs
                 </Button>
               </div>
             )}
@@ -172,14 +173,8 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
         <div className="md:col-span-8">
           
           {/* Pages Views */}
+          {activeTab === 'pages' && pageView === 'home' && <ManageHomeNotes />}
           {activeTab === 'pages' && pageView === 'faqs' && <FAQManager />}
-          
-          {activeTab === 'pages' && pageView === 'home' && (
-             <div className="p-12 border-2 border-dashed border-border rounded-2xl text-center text-foreground">
-               <Layout size={48} className="mx-auto mb-4 opacity-20" />
-               <p className="font-bold uppercase tracking-widest text-xs text-light-gray">Home Page Editor Coming Soon</p>
-             </div>
-          )}
 
           {/* Runners Views */}
           {activeTab === 'runners' && rosterView === 'add' && <AddRunner />}
