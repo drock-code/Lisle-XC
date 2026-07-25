@@ -178,6 +178,7 @@ const nextConfig: NextConfig = {
       ...noteRedirects,
       ...runnerRedirects,
       { source: '/run', destination: 'https://docs.google.com/forms/d/e/1FAIpQLSewJjyCu9CBUw_8HgzlZ-lowE6gjqpPiWREXaTg6YQpQWbRUA/viewform?usp=dialog', permanent: false},
+      { source: '/recruit', destination: 'https://docs.google.com/forms/d/e/1FAIpQLSdVDxKhbpB0UwyIPExLuyPJzPZnhPbrnESU_pQ58YSzSlWgkw/viewform?usp=dialog', permanent: false},
       { source: '/faq.php', destination: '/faq', permanent: true },
       { source: '/schedule.php', destination: '/schedule', permanent: true },
       { source: '/results.php', destination: '/results', permanent: true },
