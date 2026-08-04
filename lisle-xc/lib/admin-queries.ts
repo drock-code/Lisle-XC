@@ -682,3 +682,30 @@ export interface NoteRow extends RowDataPacket {
     return result;
   }
 /*************************** END OF ADMIN NOTE QUERIES *********************************/
+
+
+/*************************** ADMIN MAP QUERIES *********************************/
+export async function insertCourseMap(name: string, location: string, fileName: string, description: string | null) {
+  const [result] = await pool.execute<ResultSetHeader>(
+    'INSERT INTO CourseMap (Name, Location, FileName, Description) VALUES (?, ?, ?, ?)',
+    [name, location, fileName, description]
+  );
+  return result;
+}
+
+export async function updateCourseMap(id: number, name: string, location: string, fileName: string, description: string | null) {
+  const [result] = await pool.execute<ResultSetHeader>(
+    'UPDATE CourseMap SET Name = ?, Location = ?, FileName = ?, Description = ? WHERE Id = ?',
+    [name, location, fileName, description, id]
+  );
+  return result;
+}
+
+export async function deleteCourseMap(id: number) {
+  const [result] = await pool.execute<ResultSetHeader>(
+    'DELETE FROM CourseMap WHERE Id = ?',
+    [id]
+  );
+  return result;
+}
+/*************************** END OF ADMIN MAP QUERIES *********************************/
