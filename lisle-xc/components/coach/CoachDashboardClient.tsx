@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { 
   UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy, 
-  CalendarDays, PlusCircle, HelpCircle, FileText 
+  CalendarDays, PlusCircle, HelpCircle, FileText, Map 
 } from "lucide-react";
 
 import { TabGroup, Tab } from "@/components/Tabs";
@@ -15,11 +15,12 @@ import ManageSchedule from "./ManageSchedule";
 import AddResults from "./AddResults";
 import FAQManager from "./ManageFAQs";
 import ManageHomeNotes from "./ManageHomeNotes";
+import ManageMaps from "./ManageMaps";
 
 type TabType = 'pages' | 'runners' | 'website';
 type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
 type WebsiteViewType = 'schedule' | 'settings' | 'results';
-type PageViewType = 'faqs' | 'home';
+type PageViewType = 'faqs' | 'home' | 'maps';
 
 interface DashboardProps {
   userName: string;
@@ -67,7 +68,7 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
             
             <p className="text-sm text-light-gray leading-relaxed mb-6">
               {activeTab === 'runners' && "Manage your athlete database, update profiles, and build seasonal rosters."}
-              {activeTab === 'pages' && "Edit home page content, FAQs, and race recaps."}
+              {activeTab === 'pages' && "Edit home page content, FAQs, race recaps, and course maps."}
               {activeTab === 'website' && "Update your season schedule, global links, and site dates."}
             </p>
 
@@ -90,6 +91,16 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
                   className="w-full justify-start! gap-3"
                 >
                   <HelpCircle size={18} /> Manage FAQs
+                </Button>
+
+                {/* <-- Added Maps Button --> */}
+                <Button 
+                  size="sm" 
+                  isActive={pageView === 'maps'} 
+                  onClick={() => setPageView('maps')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <Map size={18} /> Manage Maps
                 </Button>
               </div>
             )}
@@ -175,6 +186,7 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
           {/* Pages Views */}
           {activeTab === 'pages' && pageView === 'home' && <ManageHomeNotes />}
           {activeTab === 'pages' && pageView === 'faqs' && <FAQManager />}
+          {activeTab === 'pages' && pageView === 'maps' && <ManageMaps />} {/* <-- Added Maps Render --> */}
 
           {/* Runners Views */}
           {activeTab === 'runners' && rosterView === 'add' && <AddRunner />}
