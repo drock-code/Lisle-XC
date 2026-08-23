@@ -1,6 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import { Extension } from "@tiptap/core";
 import TextAlign from "@tiptap/extension-text-align";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -15,7 +16,7 @@ import {
 
 import MediaChooserModal from "@/components/MediaChooseModal";
 
-// Create a custom extension that adds Tailwind float classes
+// Custom extension that adds Tailwind float classes
 const CustomImage = Image.extend({
   addAttributes() {
     return {
@@ -37,6 +38,27 @@ const CustomImage = Image.extend({
   },
 });
 
+// Custom extension to handle the Tab key
+const TabHandler = Extension.create({
+  name: "tabHandler",
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => {
+        // 1. If in a list, indent the list item
+        if (this.editor.commands.sinkListItem("listItem")) {
+          return true;
+        }
+        // 2. Otherwise, insert 4 actual non-breaking space characters
+        return this.editor.commands.insertContent("\u00A0\u00A0\u00A0\u00A0");
+      },
+      "Shift-Tab": () => {
+        // Outdent list item if applicable
+        return this.editor.commands.liftListItem("listItem");
+      },
+    };
+  },
+});
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -44,7 +66,7 @@ interface RichTextEditorProps {
 
 export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
-// Unified simple modal configuration state
+  // Unified simple modal configuration state
   const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; type: "file" | "image" }>({
     isOpen: false,
     type: "file",
@@ -60,6 +82,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Link.configure({ openOnClick: false }),
       CustomImage,
+      TabHandler,
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -67,7 +90,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
     },
     editorProps: {
       attributes: {
-        class: "prose prose-sm dark:prose-invert focus:outline-none min-h-[150px] prose-a:!text-foreground p-4 bg-background max-w-none text-foreground",
+        class: "prose prose-sm dark:prose-invert focus:outline-none min-h-[150px] prose-a:!text-foreground p-4 bg-background max-w-none text-foreground rounded-b-xl",
       },
     },
   });
@@ -81,10 +104,10 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
   if (!editor) return null;
 
   return (
-    <div className="bg-background rounded-xl overflow-hidden border border-border focus-within:ring-2 focus-within:ring-lisle-blue flex flex-col">
+    <div className="bg-background rounded-xl border border-border focus-within:ring-2 focus-within:ring-lisle-blue flex flex-col relative">
       
       {/* TOOLBAR */}
-      <div className="flex flex-wrap items-center gap-1 bg-light-blue-gray/20 p-2 border-b border-border text-foreground">
+      <div className="sticky top-20 z-10 flex flex-wrap items-center gap-1 bg-background p-2 border-b border-border text-foreground rounded-t-xl shadow-sm">
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -114,7 +137,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
 
         <div className="w-px h-6 bg-border mx-1" />
 
-{/* ALIGN LEFT */}
+        {/* ALIGN LEFT */}
         <button
           type="button"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -270,6 +293,6 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           }
         }}
       />
-      </div>
+    </div>
   );
 }
