@@ -685,27 +685,107 @@ export interface NoteRow extends RowDataPacket {
 
 
 /*************************** ADMIN MAP QUERIES *********************************/
-export async function insertCourseMap(name: string, location: string, fileName: string, description: string | null) {
-  const [result] = await pool.execute<ResultSetHeader>(
-    'INSERT INTO CourseMap (Name, Location, FileName, Description) VALUES (?, ?, ?, ?)',
-    [name, location, fileName, description]
-  );
-  return result;
-}
+  export async function insertCourseMap(name: string, location: string, fileName: string, description: string | null) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'INSERT INTO CourseMap (Name, Location, FileName, Description) VALUES (?, ?, ?, ?)',
+      [name, location, fileName, description]
+    );
+    return result;
+  }
 
-export async function updateCourseMap(id: number, name: string, location: string, fileName: string, description: string | null) {
-  const [result] = await pool.execute<ResultSetHeader>(
-    'UPDATE CourseMap SET Name = ?, Location = ?, FileName = ?, Description = ? WHERE Id = ?',
-    [name, location, fileName, description, id]
-  );
-  return result;
-}
+  export async function updateCourseMap(id: number, name: string, location: string, fileName: string, description: string | null) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'UPDATE CourseMap SET Name = ?, Location = ?, FileName = ?, Description = ? WHERE Id = ?',
+      [name, location, fileName, description, id]
+    );
+    return result;
+  }
 
-export async function deleteCourseMap(id: number) {
-  const [result] = await pool.execute<ResultSetHeader>(
-    'DELETE FROM CourseMap WHERE Id = ?',
-    [id]
-  );
-  return result;
-}
+  export async function deleteCourseMap(id: number) {
+    const [result] = await pool.execute<ResultSetHeader>(
+      'DELETE FROM CourseMap WHERE Id = ?',
+      [id]
+    );
+    return result;
+  }
 /*************************** END OF ADMIN MAP QUERIES *********************************/
+
+
+/*************************** ADMIN TRAVEL INFO QUERIES *********************************/
+  export async function insertTravelInfo(data: {
+    meetName: string;
+    locationName: string;
+    address: string;
+    gmapsLink: string | null;
+    returnTime: string | null;
+    parking: string | null;
+    concessions: string | null;
+    awards: string | null;
+    results: string | null;
+    courseMapId: number | null;
+  }) {
+    await pool.query(
+      `INSERT INTO \`TravelInfo\`
+      (\`MeetName\`, \`LocationName\`, \`Address\`, \`GmapsLink\`, \`ReturnTime\`, \`Parking\`, \`Concessions\`, \`Awards\`, \`Results\`, \`CourseMapId\`)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.meetName,
+        data.locationName,
+        data.address,
+        data.gmapsLink || null,
+        data.returnTime || null,
+        data.parking || null,
+        data.concessions || null,
+        data.awards || null,
+        data.results || null,
+        data.courseMapId ? Number(data.courseMapId) : null,
+      ]
+    );
+  }
+
+  export async function updateTravelInfo(data: {
+    id: number;
+    meetName: string;
+    locationName: string;
+    address: string;
+    gmapsLink: string | null;
+    returnTime: string | null;
+    parking: string | null;
+    concessions: string | null;
+    awards: string | null;
+    results: string | null;
+    courseMapId: number | null;
+  }) {
+    await pool.query(
+      `UPDATE \`TravelInfo\` SET
+        \`MeetName\` = ?,
+        \`LocationName\` = ?,
+        \`Address\` = ?,
+        \`GmapsLink\` = ?,
+        \`ReturnTime\` = ?,
+        \`Parking\` = ?,
+        \`Concessions\` = ?,
+        \`Awards\` = ?,
+        \`Results\` = ?,
+        \`CourseMapId\` = ?
+      WHERE \`Id\` = ?`,
+      [
+        data.meetName,
+        data.locationName,
+        data.address,
+        data.gmapsLink || null,
+        data.returnTime || null,
+        data.parking || null,
+        data.concessions || null,
+        data.awards || null,
+        data.results || null,
+        data.courseMapId ? Number(data.courseMapId) : null,
+        data.id,
+      ]
+    );
+  }
+
+  export async function deleteTravelInfo(id: number) {
+    await pool.query(`DELETE FROM \`TravelInfo\` WHERE \`Id\` = ?`, [id]);
+  }
+/*************************** END OF ADMIN TRAVEL INFO QUERIES *********************************/

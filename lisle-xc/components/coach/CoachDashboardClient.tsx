@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { 
   UserPlus, Layout, Globe, Users, Edit3, ListChecks, Trophy, 
-  CalendarDays, PlusCircle, HelpCircle, FileText, Map 
+  CalendarDays, PlusCircle, HelpCircle, FileText, Map, MapPin 
 } from "lucide-react";
 
 import { TabGroup, Tab } from "@/components/Tabs";
@@ -16,11 +16,12 @@ import AddResults from "./AddResults";
 import FAQManager from "./ManageFAQs";
 import ManageHomeNotes from "./ManageHomeNotes";
 import ManageMaps from "./ManageMaps";
+import ManageTravelInfo from "./ManageTravelInfo"; // <-- Added import
 
 type TabType = 'pages' | 'runners' | 'website';
 type RosterViewType = 'add' | 'edit' | 'manage' | 'awards'; 
 type WebsiteViewType = 'schedule' | 'settings' | 'results';
-type PageViewType = 'faqs' | 'home' | 'maps';
+type PageViewType = 'faqs' | 'home' | 'maps' | 'travel'; // <-- Added 'travel'
 
 interface DashboardProps {
   userName: string;
@@ -93,7 +94,6 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
                   <HelpCircle size={18} /> Manage FAQs
                 </Button>
 
-                {/* <-- Added Maps Button --> */}
                 <Button 
                   size="sm" 
                   isActive={pageView === 'maps'} 
@@ -101,6 +101,15 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
                   className="w-full justify-start! gap-3"
                 >
                   <Map size={18} /> Manage Maps
+                </Button>
+
+                <Button 
+                  size="sm" 
+                  isActive={pageView === 'travel'} 
+                  onClick={() => setPageView('travel')}
+                  className="w-full justify-start! gap-3"
+                >
+                  <MapPin size={18} /> Manage Travel Info
                 </Button>
               </div>
             )}
@@ -186,7 +195,8 @@ export default function CoachDashboardClient({ userName }: DashboardProps) {
           {/* Pages Views */}
           {activeTab === 'pages' && pageView === 'home' && <ManageHomeNotes />}
           {activeTab === 'pages' && pageView === 'faqs' && <FAQManager />}
-          {activeTab === 'pages' && pageView === 'maps' && <ManageMaps />} {/* <-- Added Maps Render --> */}
+          {activeTab === 'pages' && pageView === 'maps' && <ManageMaps />}
+          {activeTab === 'pages' && pageView === 'travel' && <ManageTravelInfo />} {/* <-- Added Travel Info Render --> */}
 
           {/* Runners Views */}
           {activeTab === 'runners' && rosterView === 'add' && <AddRunner />}

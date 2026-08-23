@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { getCourseMaps } from "@/lib/queries"; // Update path if needed
-import { insertCourseMap, updateCourseMap, deleteCourseMap } from "@/lib/admin-queries"; // Update path if needed
+import { getCourseMaps } from "@/lib/queries";
+import { insertCourseMap, updateCourseMap, deleteCourseMap } from "@/lib/admin-queries";
 
 export async function GET() {
   try {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     
     await insertCourseMap(name, location, fileName, description);
     
-    // Instantly breaks the cache for your frontend maps page!
+    // Instantly breaks the cache for the frontend maps page
     revalidatePath("/maps"); 
     
     return NextResponse.json({ success: true });
