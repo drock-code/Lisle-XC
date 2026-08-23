@@ -152,7 +152,7 @@ export default function ManageHomeNotes() {
       : "";
 
     return (
-      <section className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-4 duration-300">
+      <section className="bg-background border border-border rounded-2xl shadow-sm animate-in fade-in slide-in-from-right-4 duration-300">
         <div className="bg-light-blue-gray/50 p-6 border-b border-border flex items-center gap-4">
           <Button 
             type="button" 
@@ -216,7 +216,7 @@ export default function ManageHomeNotes() {
   // RENDER: MAIN LIST VIEW
   // ==========================================
   return (
-    <section className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <section className="bg-background border border-border rounded-2xl shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
       
       {/* Header */}
       <div className="bg-light-blue-gray/50 p-6 border-b border-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

@@ -20,7 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Edit3, Trash2, HelpCircle, Plus, Check } from "lucide-react";
 
 import RichTextEditor from "@/components/RichTextEditor";
-import Button from "@/components/Button"; // Using your custom Button component
+import Button from "@/components/Button";
 
 // --- TYPES ---
 interface FAQ {
@@ -220,7 +220,7 @@ export default function ManageFAQs() {
   };
 
   return (
-    <section className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <section className="bg-background border border-border rounded-2xl shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
       
       {/* --- HEADER --- */}
       <div className="bg-light-blue-gray/50 p-6 border-b border-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
