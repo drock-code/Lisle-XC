@@ -11,26 +11,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file received" }, { status: 400 });
     }
 
-    // Convert the file into a Node.js Buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Clean up the filename and add a timestamp to prevent overwriting existing files
     const cleanFileName = file.name.replace(/\s+/g, '-').toLowerCase();
     const uniqueFileName = `${Date.now()}-${cleanFileName}`;
 
-    // Define the absolute path to public/images
-    const uploadDir = path.join(process.cwd(), "public", "images");
+    const uploadDir = path.join(process.cwd(), "uploads", "editor");
 
-    // Ensure the directory exists (this creates it if it doesn't!)
     await mkdir(uploadDir, { recursive: true });
 
-    // Save the file to the disk
     const filepath = path.join(uploadDir, uniqueFileName);
     await writeFile(filepath, buffer);
 
-    // Return the correct public URL so the editor can display it
-    const publicUrl = `/images/${uniqueFileName}`;
+    // Return a URL pointing to the dynamic API route
+    const publicUrl = `/api/images/${uniqueFileName}`;
 
     return NextResponse.json({ url: publicUrl });
 
