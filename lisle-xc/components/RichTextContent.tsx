@@ -8,15 +8,11 @@ export default function RichTextContent({ content }: { content: string }) {
     useEffect(() => {
         if (!contentRef.current) return;
 
-        // Find all anchor tags within the rich text
         const links = contentRef.current.querySelectorAll('a');
 
         links.forEach((link) => {
-            // If the link's hostname doesn't match our website's hostname, it's external!
             if (link.hostname && link.hostname !== window.location.hostname) {
                 link.setAttribute('target', '_blank');
-                
-                // CRITICAL for security: prevents the new tab from hijacking your site's window object
                 link.setAttribute('rel', 'noopener noreferrer'); 
             }
         });
@@ -25,8 +21,20 @@ export default function RichTextContent({ content }: { content: string }) {
     return (
         <div 
             ref={contentRef}
-            className="font-body text-foreground leading-relaxed text-lg prose max-w-none
-                       /* The Fix: Target 'a' tags directly to override prose defaults */
+            className="font-body leading-relaxed text-lg max-w-none
+                       prose 
+                       /* Force paragraphs, lists, and bold text to use your foreground color */
+                       prose-p:text-foreground 
+                       prose-strong:text-foreground 
+                       prose-ul:text-foreground 
+                       prose-ol:text-foreground 
+                       prose-li:text-foreground
+                       
+                       /* Optional: Give headings your brand color and font */
+                       prose-headings:font-heading
+                       prose-headings:text-foreground
+                       
+                       /* Your existing anchor tag fixes */
                        [&_a]:text-foreground
                        [&_a]:font-bold 
                        [&_a]:no-underline 
