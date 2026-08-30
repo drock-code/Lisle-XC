@@ -3,6 +3,9 @@ import { revalidatePath } from "next/cache";
 import { getTravelInfo } from "@/lib/queries";
 import { insertTravelInfo, updateTravelInfo, deleteTravelInfo } from "@/lib/admin-queries";
 
+// Prevent Next.js from caching the GET request indefinitely
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const info = await getTravelInfo();
