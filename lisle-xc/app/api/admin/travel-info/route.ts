@@ -3,9 +3,6 @@ import { revalidatePath } from "next/cache";
 import { getTravelInfo } from "@/lib/queries";
 import { insertTravelInfo, updateTravelInfo, deleteTravelInfo } from "@/lib/admin-queries";
 
-// Prevent Next.js from caching the GET request indefinitely
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   try {
     const info = await getTravelInfo();
@@ -19,7 +16,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     await insertTravelInfo(body);
-    revalidatePath("/travel-info"); 
+    revalidatePath("/travel"); 
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to create travel info" }, { status: 500 });
@@ -30,7 +27,7 @@ export async function PUT(req: Request) {
   try {
     const body = await req.json();
     await updateTravelInfo(body);
-    revalidatePath("/travel-info");
+    revalidatePath("/travel");
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to update travel info" }, { status: 500 });
@@ -45,7 +42,7 @@ export async function DELETE(req: Request) {
     if (!id) return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
     await deleteTravelInfo(Number(id));
-    revalidatePath("/travel-info");
+    revalidatePath("/travel");
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to delete travel info" }, { status: 500 });
