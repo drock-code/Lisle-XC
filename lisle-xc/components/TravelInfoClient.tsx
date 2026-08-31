@@ -87,7 +87,7 @@ export default function TravelInfoClient({ travelInfoData }: TravelInfoClientPro
                     <h4 className="font-bold text-foreground mb-1 uppercase tracking-wider text-xs opacity-70">
                       Estimated Return Time
                     </h4>
-                    <RichTextContent content={info.ReturnTime} />
+                    {info.ReturnTime}
                   </div>
                 </div>
               )}
