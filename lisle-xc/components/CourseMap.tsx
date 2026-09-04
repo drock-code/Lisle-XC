@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import * as turf from '@turf/turf';
 import type { FeatureCollection, LineString, Feature } from 'geojson';
@@ -18,25 +18,41 @@ const MILE_COLORS = [
   '#0284c7', // Sky 600 (Mile 1)
   '#ea580c', // Orange 600 (Mile 2)
   '#16a34a', // Green 600 (Mile 3)
-  '#9333ea', // Purple 600 (Mile 4)
-  '#dc2626'  // Red 600 (Mile 5)
 ];
 
 export default function CourseMap({ geoJsonPath }: CourseMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const [isSupported, setIsSupported] = useState<boolean>(true); // NEW: Track WebGL support
 
   useEffect(() => {
+    // Check if Mapbox / WebGL is supported by the client browser
+    if (!mapboxgl.supported()) {
+      // Defer the state update to the next tick to avoid React's synchronous setState warning
+      setTimeout(() => {
+        setIsSupported(false);
+      }, 0);
+      return;
+    }
+
     // Prevent the map from initializing more than once
     if (map.current || !mapContainer.current) return;
 
-    // Initialize the map
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/outdoors-v12',
-      center: [-88.08, 41.81], // Default fallback
-      zoom: 14,
-    });
+    try {
+      // Initialize the map inside a try/catch to prevent fatal crashes
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/outdoors-v12',
+        center: [-88.08, 41.81], // Default fallback
+        zoom: 14,
+      });
+    } catch (error) {
+      console.error('WebGL initialization error:', error);
+      setTimeout(() => {
+        setIsSupported(false);
+      }, 0);
+      return;
+    }
 
     // Wait for the map to load its base styles before adding the route
     map.current.on('load', () => {
@@ -177,6 +193,20 @@ export default function CourseMap({ geoJsonPath }: CourseMapProps) {
       map.current = null;
     };
   }, [geoJsonPath]);
+
+  // Display a clean fallback if WebGL fails instead of crashing the page
+  if (!isSupported) {
+    return (
+      <div className="w-full h-100 sm:h-125 flex flex-col items-center justify-center p-8 text-center bg-gray-50 border border-gray-200 rounded-2xl shadow-sm">
+        <p className="font-bold text-gray-800 text-lg mb-2">
+          Interactive Map Unavailable
+        </p>
+        <p className="text-sm text-gray-500 max-w-md">
+          WebGL is either disabled or unsupported on your browser or device. Please enable hardware or graphics acceleration in your browser settings to view the interactive map.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div 
