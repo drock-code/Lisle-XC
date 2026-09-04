@@ -18,6 +18,8 @@ const MILE_COLORS = [
   '#0284c7', // Sky 600 (Mile 1)
   '#ea580c', // Orange 600 (Mile 2)
   '#16a34a', // Green 600 (Mile 3)
+  '#9333ea', // Purple 600 (Mile 4)
+  '#dc2626'  // Red 600 (Mile 5)
 ];
 
 export default function CourseMap({ geoJsonPath }: CourseMapProps) {
