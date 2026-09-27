@@ -55,13 +55,17 @@ function ResultsContent() {
   const [activeLevel, setActiveLevel] = useState<'HS' | 'JH'>('HS');
   
   const searchParams = useSearchParams();
-  const selectedYear = searchParams.get('year') || 'All';
+  const urlYear = searchParams.get('year');
   
   const [results, setResults] = useState<ResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageInput, setPageInput] = useState('1');
 
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [isYearsLoaded, setIsYearsLoaded] = useState(false);
+
+  // Determine the active year silently: Use URL if present. Otherwise, use the most recent year.
+  const effectiveYear = urlYear || (availableYears.length > 0 ? availableYears[0].toString() : 'All');
 
   // Pagination and Sorting State
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +88,8 @@ function ResultsContent() {
         setAvailableYears(data);
       } catch (error) {
         console.error("Failed to load result years", error);
+      } finally {
+        setIsYearsLoaded(true); // Flag that years are done loading so we can safely fetch results
       }
     };
     fetchYears();
@@ -124,7 +130,7 @@ function ResultsContent() {
       const basePayload = overrideFilters || searchForm;
       
       // If "All" is selected, send an empty string to clear the year filter
-      const yearToSubmit = selectedYear === 'All' ? '' : selectedYear;
+      const yearToSubmit = effectiveYear === 'All' ? '' : effectiveYear;
       const payload = { ...basePayload, level: activeLevel, year: yearToSubmit };
       
       const res = await fetch('/api/results', {
@@ -144,11 +150,15 @@ function ResultsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchForm, activeLevel, selectedYear]);
+  }, [searchForm, activeLevel, effectiveYear]); // Updated dependency to effectiveYear
 
   useEffect(() => {
-    fetchResults({ ...searchForm, level: activeLevel, year: selectedYear });
-  }, [activeLevel, selectedYear, fetchResults, searchForm]);
+    // PREVENT MASSIVE LOAD: If there's no URL year, wait until the years API is finished 
+    // before running the first results fetch, otherwise it will temporarily fetch "All".
+    if (!urlYear && !isYearsLoaded) return;
+
+    fetchResults({ ...searchForm, level: activeLevel, year: effectiveYear });
+  }, [activeLevel, effectiveYear, urlYear, isYearsLoaded, fetchResults, searchForm]);
 
   // Sorting Handler
   const handleSort = (key: SortColumn) => {
@@ -256,7 +266,7 @@ function ResultsContent() {
             <div className="w-48">
               <YearSelector 
                 years={['All', ...displayYears]} 
-                selectedYear={selectedYear} 
+                selectedYear={effectiveYear} 
               />
             </div>
           </div>
